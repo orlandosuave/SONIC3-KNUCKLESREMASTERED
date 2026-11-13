@@ -1,0 +1,28 @@
+; Engine configuration file.
+; Sonic 3 & Knuckles Remastered project bootstrap.
+
+config_version=5
+
+[application]
+
+config/name="Sonic 3 & Knuckles Remastered"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.6", "GL Compatibility")
+config/description="An original-content classic platformer project with native ultrawide support."
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1600
+window/size/window_height_override=900
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+textures/default_filters/texture_filter=0
+environment/defaults/default_clear_color=Color(0.04, 0.08, 0.16, 1)

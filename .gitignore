@@ -1,0 +1,14 @@
+# Godot generated files
+.godot/
+export.cfg
+export_presets.cfg
+
+# Local editor and operating-system files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+
+# User-provided game data and local builds
+/user_data/
+/builds/
