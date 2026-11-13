@@ -11,7 +11,7 @@ This repository currently contains the project scope and a minimal Godot starter
 
 ## Current foundation
 
-- Engine: Godot 4.x (provisional)
+- Engine: Godot 4.7.2 stable, standard GDScript build
 - First target: Windows PC; keep the project portable for later desktop builds
 - Display target: correct aspect-aware rendering from 16:9 through native 32:9
 - Gameplay target: fixed 60 Hz simulation and stable 60 FPS
