@@ -2,22 +2,25 @@
 
 **Status:** Draft for review  
 **Project:** Sonic 3 & Knuckles Remastered  
-**Scope version:** 0.1
+**Scope version:** 0.2
 
 ## 1. Product definition
 
-Create an independent, PC-first Sonic 3 & Knuckles fan project that combines a polished classic Sonic play experience with the extensibility and built-in creator tools that make Super Mario Bros. Remastered (SMB1R) compelling. Sonic 3 A.I.R. is a reference for the remaster experience; SMB1R is a reference for level editing, customization, and replay systems.
+Create an SMB1R-style PC game for Sonic 3 & Knuckles: a full-campaign remaster with a user-provided compatible ROM flow, a built-in level editor, custom characters, resource packs, and replay modes. Target 60 FPS gameplay and native 32:9 ultrawide support.
 
-The project will build its own engine layer and tools in Godot. References to those games describe product goals only. The project will use original work or game data and assets that the team has permission to use.
+“Clone of SMB1R” means adopting its product structure and player/creator features. We will write our own Godot runtime, ROM importer, gameplay code, and tools. Sonic 3 A.I.R. is a reference for Sonic-specific behavior and remaster polish; it is not a code or asset source.
+
+The selected ROM is input to a local validation and import pipeline. The game will not execute the ROM as an emulator. ROM files and extracted/generated game data stay in the user's local application-data directory and are excluded from this public repository and release packages. The repository contains the importer, original implementation, and tooling.
 
 ## 2. Product goals
 
 1. Make momentum-based platforming feel responsive, readable, and consistent.
-2. Treat 32:9 as a supported gameplay aspect ratio, with correct camera composition and no image stretching.
-3. Provide an in-game level editor with test-play and portable level packs.
-4. Make character and presentation customization accessible through documented data formats.
-5. Provide replay modes and quality-of-life settings in the game itself.
-6. Keep the codebase and content pipeline approachable for community contributions.
+2. Deliver gameplay at a fixed 60 simulation updates per second and a stable 60 FPS rendering target.
+3. Treat 32:9 as a native gameplay aspect ratio, with correct camera composition and no image stretching.
+4. Provide an in-game level editor with test-play and portable level packs.
+5. Make character and presentation customization accessible through documented data formats.
+6. Provide replay modes and quality-of-life settings in the game itself.
+7. Keep the codebase and content pipeline approachable for community contributions.
 
 ## 3. Target users and platform
 
@@ -33,12 +36,15 @@ Console, mobile, and online multiplayer support are outside the initial scope.
 
 ### 4.1 First playable prototype
 
-The prototype is a small, self-contained movement test level. It must establish:
+The prototype starts by establishing the ROM and runtime foundations, then delivers a small, self-contained movement test level. It must establish:
 
+- A file selection/drop flow for a user-supplied combined Sonic 3 & Knuckles ROM, with supported-revision detection and clear rejection of unknown/corrupt files.
+- A read-only importer that extracts the first required graphics/data set to a versioned local cache outside the Git repository.
 - A controllable player with acceleration, braking, jumping, slopes, rolling, collision, and damage recovery.
 - Rings, a checkpoint, and a clear end-of-level trigger.
 - A follow camera with configurable look-ahead.
-- Resizable window rendering that preserves the image and adapts the visible world area.
+- Resizable window rendering that preserves the image and adapts the visible world area through native 32:9.
+- A fixed 60 Hz gameplay simulation with rendering capped/synchronized for a 60 FPS target.
 - Keyboard and gamepad input.
 - Debug controls for inspecting speed, collision, and camera behavior.
 
@@ -57,10 +63,12 @@ The vertical slice is one polished, complete zone act that demonstrates the inte
 
 The initial full release is a single-player desktop game with:
 
-- A complete, coherent campaign based on the project's agreed Sonic 3 & Knuckles scope.
-- A polished campaign flow with zone/act progression, bosses, checkpoints, save data, and endings.
-- Native aspect-aware rendering from 16:9 through 32:9, with bounded-camera and expanded-camera options where level design requires them.
-- Character selection using a documented, data-driven character format. The launch roster is limited to characters that have complete, balanced, and properly authorized content.
+- The complete combined Sonic 3 & Knuckles campaign: all primary zones and acts, character routes, bosses, special stages, bonus stages, transitions, and endings represented by the supported ROM version.
+- A polished campaign flow with zone/act progression, checkpoints, save data, and endings.
+- A compatible-ROM selector, validator, and local extraction/cache pipeline. The initial target is one supported combined S3&K ROM revision; additional regional/revision hashes follow only after their extracted data is verified.
+- A 60 Hz fixed gameplay simulation and stable 60 FPS target, including campaign, special stages, and menus where applicable.
+- Native aspect-aware rendering from 16:9 through 32:9, with 32:9 as a first-class, expanded gameplay view and a bounded-camera option for authored encounters.
+- Sonic, Tails, and Knuckles as the initial complete character roster, using a documented, data-driven format. Additional characters can be added as compatible custom characters/packs.
 - Time Attack and a small set of built-in challenge variants.
 - An in-game level editor for placing supported terrain, objects, enemies, checkpoints, and goal events; instant test-play; validation; save/load; and import/export of level packs.
 - Cosmetic/resource packs for supported art and audio replacements, with enable/disable controls and clear error reporting.
@@ -78,12 +86,16 @@ An online level browser, online accounts, and automatic cloud distribution are n
 - Ensure menus remain usable at 16:9, 21:9, and 32:9.
 - Include 32:9 test scenes for hazards, bosses, transitions, and level boundaries so content does not rely on a fixed screen width.
 - Treat 5120×1440 as a reference 32:9 mode, while supporting other 32:9 resolutions through aspect-aware rendering.
+- Treat 60 FPS as the normal-speed reference for game simulation. VSync/frame pacing can display at 60; higher refresh displays may use interpolation without changing simulation speed.
+- Verify gameplay geometry and enemy/boss cues at 32:9. Extra visibility must not let the player trigger encounter logic prematurely or make hazards unfairly visible only at the last moment.
 
 ## 6. Quality requirements
 
-- Gameplay simulation uses a fixed update step so movement remains consistent across display refresh rates.
-- The initial performance target is stable 60 frames per second on a documented Windows PC baseline at 1920×1080. Higher resolutions depend on available hardware.
+- Gameplay simulation runs at a fixed 60 updates per second; render pacing must not change speed, collisions, timers, or input response.
+- The initial performance target is stable 60 frames per second on a documented Windows PC baseline at 1920×1080 and a defined reference 32:9 resolution. Higher resolutions depend on available hardware.
 - The game must handle window resize, pause/resume, controller disconnect/reconnect, and missing or invalid user packs without losing campaign saves.
+- The importer never edits the supplied ROM. It verifies known revisions, reports unsupported inputs, and rebuilds its local cache when the selected source or importer version changes.
+- ROM files and generated proprietary game data never enter Git history or public release archives.
 - Editor content must be validated before play or export, with actionable error messages.
 - Settings and saves must be stored separately from installed game files.
 
@@ -94,7 +106,7 @@ An online level browser, online accounts, and automatic cloud distribution are n
 - A public hosted mod marketplace or online account system.
 - Unrestricted native-code or script execution from downloaded packs.
 - 3D gameplay or a broad multi-game retro collection.
-- Reproducing SMB1R, Sonic 3 A.I.R., or another game's source code, art, audio, level files, or branding.
+- Reproducing SMB1R or Sonic 3 A.I.R. source code, art, audio, level files, or branding.
 - Guaranteed support for every community mod or every arbitrary monitor resolution.
 
 These may be reconsidered after the 1.0 desktop release, but they are not part of the initial commitment.
@@ -103,13 +115,14 @@ These may be reconsidered after the 1.0 desktop release, but they are not part o
 
 | Milestone | Deliverable | Exit criteria |
 |---|---|---|
-| 0. Scope and foundation | Scope, engine project, input/display conventions | Scope decisions recorded; project opens and runs a placeholder scene |
-| 1. Movement prototype | Test room and basic player controller | Core movement, rings, damage, checkpoint, and goal can be played end-to-end |
-| 2. Camera and ultrawide | Camera rules and viewport handling | 16:9, 21:9, and 32:9 pass composition checks without stretched artwork or broken triggers |
-| 3. Vertical slice | One finished act and boss/set piece | A new player can complete the act; save, options, audio, and controls work |
-| 4. Creator alpha | Level format and in-game editor | Create, save, reopen, validate, and test-play a level; export/import a level pack |
-| 5. Content and modes | Campaign, supported characters, challenges, packs | Release content meets the agreed 1.0 checklist and has creator documentation |
-| 6. Release candidate | Performance, accessibility, compatibility, packaging | No known blocker bugs; clean install can play and load supported content |
+| 0. Scope and foundation | Scope, supported-ROM decision, engine project, data-separation policy | Project opens; repository rules exclude ROM/cache data; initial supported ROM format/revision is documented |
+| 1. ROM import spike | ROM selector, hash/size/header validator, local cache | Known supported image is recognized; bad/unknown image is rejected; source remains unchanged |
+| 2. Movement prototype | Test room and basic player controller | Core movement, rings, damage, checkpoint, and goal run at fixed 60 Hz |
+| 3. Camera and ultrawide | Camera rules and viewport handling | 16:9, 21:9, and native 32:9 pass composition checks without stretched artwork or broken triggers |
+| 4. Vertical slice | One finished act and boss/set piece using imported/local content | A new player can complete the act at 60 FPS; save, options, audio, and controls work |
+| 5. Creator alpha | Level format and in-game editor | Create, save, reopen, validate, and test-play a level; export/import a level pack |
+| 6. Full campaign and modes | All campaign zones/routes, characters, challenges, packs | Every campaign path reaches its intended ending and passes 60 FPS/32:9 checks |
+| 7. Release candidate | Performance, accessibility, compatibility, packaging | Clean install imports a supported ROM, plays/saves the full game, and loads supported content |
 
 ## 9. Definition of done for 1.0
 
@@ -120,20 +133,29 @@ These may be reconsidered after the 1.0 desktop release, but they are not part o
 5. Supported packs that are malformed or incompatible fail with a clear message and do not corrupt saves.
 6. The repository contains build/run instructions, controls, creator documentation, and a record of third-party content permissions.
 
-## 10. Open decisions
+## 10. Confirmed decisions and remaining decisions
 
-These decisions should be settled before the vertical slice is treated as a content commitment:
+### Confirmed scope
 
-1. **Campaign target:** faithful reconstruction of the complete Sonic 3 & Knuckles campaign, a shorter remixed campaign, or a new campaign inspired by its mechanics and structure.
-2. **Content source:** what assets or game data may be used and distributed, and what must remain user-provided.
-3. **Launch roster:** which characters receive complete gameplay kits for 1.0.
-4. **Art direction:** original pixel-art treatment, updated pixel art, or another original visual style.
-5. **Release model:** private learning project, free fan project, or another distribution plan.
-6. **32:9 camera ceiling:** whether 32:9 always expands gameplay view or allows some scenes to use side panels and a bounded view.
+- Full Sonic 3 & Knuckles campaign.
+- 60 FPS gameplay target.
+- Native 32:9 support.
+- User supplies a compatible ROM to unlock/import the game content.
+- SMB1R-style product structure, including an integrated editor, custom character/resource packs, and replay modes.
 
-Until decided, development should use placeholder/original assets, one playable character, a single-player desktop target, and a 32:9 expanded-view mode with a bounded-camera fallback.
+### Remaining implementation decisions
+
+1. Exact ROM source, format, region, and revision for the first supported combined S3&K image.
+2. Which ROM-derived data can be generated locally and how much campaign/event data must be recreated in our own runtime.
+3. Art treatment and allowed soundtrack/audio sources.
+4. The reference PC hardware and 32:9 resolution for the 60 FPS acceptance target.
+5. Distribution plan and any required approvals for the fan project.
+
+Until those implementation decisions are recorded, use one known ROM revision, keep all ROM-derived files outside the repository, use placeholder/original assets for the game UI, and implement 32:9 expanded view with authored camera bounds where needed.
 
 ## 11. Reference projects
 
 - [SMB1R project](https://github.com/JHDev2006/Super-Mario-Bros.-Remastered-Public) and [SMB1R wiki](https://github.com/JHDev2006/Super-Mario-Bros.-Remastered-Public/wiki): level editor, custom characters, resource packs, and content formats.
 - [Sonic 3 A.I.R. official site](https://sonic3air.org/) and [source repository](https://github.com/Eukaryot/sonic3air): remaster presentation, controls, and modding reference.
+- [Sonic 3 A.I.R. releases](https://github.com/Eukaryot/sonic3air/releases): stable/test packaging, platform builds, release notes, ultrawide fixes, and mod workflow improvements.
+- [Sonic 3 / Sonic & Knuckles disassembly](https://github.com/sonicretro/skdisasm): technical research into zone data, decompression, lock-on content, and event-driven behavior.
