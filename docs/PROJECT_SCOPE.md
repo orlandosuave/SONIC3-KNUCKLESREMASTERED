@@ -120,8 +120,8 @@ These may be reconsidered after the 1.0 desktop release, but they are not part o
 | 2. Movement prototype | Test room and basic player controller | Core movement, rings, damage, checkpoint, and goal run at fixed 60 Hz |
 | 3. Camera and ultrawide | Camera rules and viewport handling | 16:9, 21:9, and native 32:9 pass composition checks without stretched artwork or broken triggers |
 | 4. Vertical slice | One finished act and boss/set piece using imported/local content | A new player can complete the act at 60 FPS; save, options, audio, and controls work |
-| 5. Creator alpha | Level format and in-game editor | Create, save, reopen, validate, and test-play a level; export/import a level pack |
-| 6. Full campaign and modes | All campaign zones/routes, characters, challenges, packs | Every campaign path reaches its intended ending and passes 60 FPS/32:9 checks |
+| 5. Creator alpha | Level format, in-game editor, custom packs, and replay modes | Create, save, reopen, validate, and test-play a level; export/import a level pack |
+| 6. Full campaign | All zones, character routes, bosses, special/bonus stages, and endings | Every campaign path reaches its intended ending and passes 60 FPS/32:9 checks |
 | 7. Release candidate | Performance, accessibility, compatibility, packaging | Clean install imports a supported ROM, plays/saves the full game, and loads supported content |
 
 ## 9. Definition of done for 1.0
