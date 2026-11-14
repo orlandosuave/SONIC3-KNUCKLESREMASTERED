@@ -1,6 +1,6 @@
 # ROM Format Notes — Phase 1 Proof Set
 
-These notes establish a research map for the first proof set. The checked-in document contains no ROM bytes or extracted game assets. It uses the locally verified profile in [ROM_IMPORT_SPEC.md](ROM_IMPORT_SPEC.md) and public disassembly metadata as research references. It does **not** yet claim that any decoder or byte offset has been verified against the user's image.
+These notes establish a research map for the first proof set. The checked-in document contains no ROM bytes or extracted game assets. It uses the locally verified profile in [ROM_IMPORT_SPEC.md](ROM_IMPORT_SPEC.md) and public disassembly metadata as research references. The AIZ Act 1 intro tile ranges and KosinskiM output have now been checked against that exact image; layout, tile-to-palette selection, and tile placement are still unresolved.
 
 ## Profile and address model
 
@@ -11,7 +11,7 @@ These notes establish a research map for the first proof set. The checked-in doc
 | Component images | S&K at 0x000000–0x1FFFFF; Sonic 3 at 0x200000–0x3FFFFF |
 | Address model for future readers | Component-local ROM offsets must be translated to combined-image offsets explicitly; never treat CPU addresses as file offsets without a documented mapping |
 | Byte order | Mega Drive data structures are generally big-endian; verify per structure and document exceptions |
-| Decoder status | Research mapping only; no game-data decoder implemented |
+| Decoder status | Bounded KosinskiM decompression, packed 4bpp tile unpacking, Genesis CRAM conversion, and local AIZ tile-atlas cache proof implemented |
 
 The intake hash pins one exact image. The two image headers establish the observed concatenation but do not establish every resource's component, address, or compression mode.
 
@@ -31,9 +31,23 @@ The first concrete level candidate is **Angel Island Zone Act 1**, starting with
 | `player.sonic` | Disassembly tree places player data in `General/Sprites`; SonLVL configuration references Sonic palette | Art, mappings, animation tables, and palette are separate candidate structures | Low: choose a minimal idle/run/jump subset, then trace mapping/frame tables and art sources to exact profile offsets |
 | `objects.aiz.act1.intro` | `SonLVL - S3.ini`: `Levels/AIZ/Object Pos/1-S3.bin` | Object placement records | Low: not required for the first static terrain preview; record format and references before using |
 
-The repository's SonLVL diagnostic log for loading AIZ Act 1 reports the layout as **uncompressed**, the tile files as **KosinskiM**, and the block/chunk files as **Kosinski**. This is enough to refine the decoder shortlist, but not enough to implement safely: it does not establish the stream bounds, output sizes, or the accepted image's component-local/combined-ROM offsets. The intro and main layout both point to `Layout/1.bin`; the intro uses `Intro.bin` palette data and intro tile sets, while the main area uses the main-level tile sets and palette. Treat them as distinct preview configurations over shared layout data, not as an assumption that the whole act has one tileset.
+The repository's SonLVL diagnostic log for loading AIZ Act 1 reports the layout as **uncompressed**, the tile files as **KosinskiM**, and the block/chunk files as **Kosinski**. The intro and main layout both point to `Layout/1.bin`; the intro uses `Intro.bin` palette data and intro tile sets, while the main area uses the main-level tile sets and palette. Treat them as distinct preview configurations over shared layout data, not as an assumption that the whole act has one tileset.
 
 These filenames come from the research project's source tree, not from a ROM extraction. They are useful labels and lead-ins for investigation, not a substitute for verifying address tables against the accepted profile.
+
+## Verified AIZ Act 1 intro tile proof
+
+The ranges below were found by matching each complete public disassembly resource against the locally supplied image with profile SHA-256 `fba0677fde9f76df93f3e98d6310d8af68b9847bde16e253d73cd4dd8134ed23`. This verifies fixed ranges for that exact profile; it is not a general ROM scanner or a pointer-table implementation.
+
+| Resource | Combined-image offset | Compressed/source bytes | Decoded bytes | Decoded SHA-256 | Status |
+|---|---:|---:|---:|---|---|
+| AIZ Act 1 intro primary tiles | `0x3A566A` | 3,602 | 6,080 | `6d3f88feb4377a1f9770e1b9cdf7cddbb0e0aa6cd25a24f9b7b92a6e0cf5320d` | Decoded and local atlas generated |
+| AIZ Act 1 intro secondary tiles | `0x3A647C` | 12,242 | 25,184 | `b4bc2b52bc8ae49446fc5547d907ac2fdd656821435b5547684d34d0557d546f` | Decoded and local atlas generated |
+| AIZ intro palette | `0x28C314` | 96 | 48 CRAM words | — | Decoded; preview currently uses palette line 0 pending layout mapping |
+
+The two tile output hashes match output from the public KENSSharp KosinskiM reference decoder when run over the matched reference resources. The implementation has bounded source reads, a declared-output-size limit, a module limit, a command limit, and rejects invalid back-references or output-size mismatches. No compressed or decompressed ROM bytes are checked in.
+
+Genesis tile pixels use packed nibbles: each byte stores the left pixel in its high nibble and the right pixel in its low nibble. The local proof writes `aiz_act1_intro_primary.png` and `aiz_act1_intro_secondary.png` under `user://imports/sk-s3-lockon-4m-sha256-fba0677f/`; these are generated user data and remain outside the repository. The current preview is a raw tile atlas, not a reconstructed level scene.
 
 ## Proposed decode chain
 
@@ -68,10 +82,10 @@ For each structure, add a row or subsection with:
 - [SonPLN.ini](https://github.com/sonicretro/skdisasm/blob/master/SonLVL%20INI%20Files/SonPLN.ini) demonstrates that tile art, mapping data, palette data, dimensions, and compression labels are separate inputs in the research tooling.
 - [SonLVL AIZ load diagnostic](https://github.com/sonicretro/SonLVL/issues/137) shows the tool's detected encodings for AIZ Act 1: KosinskiM tiles, Kosinski blocks/chunks, and uncompressed layout.
 
-These references support the structure inventory and dependency chain. They do not provide a verified byte-offset table for the accepted user ROM in this project, and no disassembly code or extracted assets are imported into the game.
+These references support the structure inventory and dependency chain. Only the listed AIZ tile/palette source ranges have been matched to the accepted profile so far; no disassembly code or extracted assets are imported into the game.
 
 ## Current status and next checks
 
-- **Known:** the accepted image is two consecutive 2 MiB component images; AIZ Act 1 intro is a tractable proof candidate; research metadata separates layout, chunks, blocks, tiles, palette, and object placements.
-- **Unknown:** exact combined-image source ranges, tile/block/chunk record schemas, layout dimensions/encoding, complete Sonic frame chain, and compression edge cases for the selected profile.
-- **Next:** inspect the public source metadata for address/pointer definitions; trace only the AIZ intro layout/art/palette and minimal Sonic frames to the accepted image; record exact offsets and synthetic fixtures before writing decoders.
+- **Known:** the accepted image is two consecutive 2 MiB component images; AIZ intro primary and secondary tile ranges and palette range match complete reference resources; both KosinskiM outputs match independent reference hashes; packed 4bpp unpacking and atlas generation run in Godot.
+- **Unknown:** tile palette-line assignment in the layout, layout dimensions/encoding and placement references, tile/block/chunk record schemas, and the complete Sonic frame chain.
+- **Next:** finish the small texture preview UX and verify palette/layout mapping, then trace the compact AIZ layout into a static level view. Keep the scope to a proof slice; do not expand into a general ROM scanner.

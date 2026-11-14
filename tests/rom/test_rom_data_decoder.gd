@@ -10,6 +10,7 @@ func _initialize() -> void:
 	_test_decodes_4bpp_pixels()
 	_test_rejects_malformed_tile_data()
 	_test_decodes_big_endian_palette()
+	_test_decodes_kosinski_m_literals()
 	_test_rejects_malformed_palette_data()
 	_test_composes_image_and_checks_palette_indices()
 	if failures == 0:
@@ -23,20 +24,20 @@ func _initialize() -> void:
 func _test_decodes_4bpp_pixels() -> void:
 	var tile := PackedByteArray()
 	tile.resize(32)
-	# Row 0: bitplanes form pixels 0,1,2,3,15,8,4,2.
-	tile[0] = 0b10000000
-	tile[1] = 0b01000000
-	tile[2] = 0b00100000
-	tile[3] = 0b00010000
+	# Packed pixels: each high nibble is left of its low nibble.
+	tile[0] = 0x12
+	tile[1] = 0x3F
+	tile[2] = 0x84
+	tile[3] = 0x26
 	var decoded: Dictionary = Decoder.decode_4bpp_tiles(tile)
 	_check(decoded.get("ok", false), "4bpp tile decode succeeds")
 	_check(decoded.get("tile_count") == 1, "4bpp tile count")
 	var pixels: PackedByteArray = decoded["tiles"][0]
-	_check(pixels[0] == 1, "bitplane zero maps to index bit zero")
-	_check(pixels[1] == 2, "bitplane one maps to index bit one")
-	_check(pixels[2] == 4, "bitplane two maps to index bit two")
-	_check(pixels[3] == 8, "bitplane three maps to index bit three")
-	_check(pixels[4] == 0 and pixels[5] == 0 and pixels[6] == 0 and pixels[7] == 0, "unset tile bits decode to transparent index")
+	_check(pixels[0] == 1 and pixels[1] == 2, "first packed pixel pair")
+	_check(pixels[2] == 3 and pixels[3] == 15, "second packed pixel pair")
+	_check(pixels[4] == 8 and pixels[5] == 4, "third packed pixel pair")
+	_check(pixels[6] == 2 and pixels[7] == 6, "fourth packed pixel pair")
+	_check(pixels[8] == 0 and pixels[9] == 0 and pixels[14] == 0 and pixels[15] == 0, "unset packed pixels decode to index zero")
 
 
 func _test_rejects_malformed_tile_data() -> void:
@@ -63,6 +64,17 @@ func _test_rejects_malformed_palette_data() -> void:
 	_check(not Decoder.decode_palette_4bpp(PackedByteArray()).get("ok", false), "empty palette rejected")
 	_check(not Decoder.decode_palette_4bpp(PackedByteArray([0])).get("ok", false), "odd palette length rejected")
 	_check(not Decoder.decode_palette_4bpp(PackedByteArray([0, 0]), 0).get("ok", false), "nonpositive palette limit rejected")
+
+
+func _test_decodes_kosinski_m_literals() -> void:
+	# Descriptor bits (LSB first): literal, then long-match terminator.
+	var stream := PackedByteArray([0x00, 0x01, 0x05, 0x00, 0x41, 0x00, 0x00, 0x00])
+	var decoded: Dictionary = Decoder.decode_moduled_kosinski(stream)
+	_check(decoded.get("ok", false), "KosinskiM literal stream decodes")
+	if decoded.get("ok", false):
+		_check(decoded["data"] == PackedByteArray([0x41]), "KosinskiM literal output")
+	_check(not Decoder.decode_moduled_kosinski(PackedByteArray([0x00, 0x01, 0x01])).get("ok", false), "truncated KosinskiM stream rejected")
+	_check(not Decoder.decode_moduled_kosinski(PackedByteArray([0x10, 0x00, 0x05, 0x00, 0x41, 0, 0, 0])).get("ok", false), "oversized KosinskiM output rejected")
 
 
 func _test_composes_image_and_checks_palette_indices() -> void:

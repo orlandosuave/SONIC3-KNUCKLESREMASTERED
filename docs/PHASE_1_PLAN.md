@@ -121,11 +121,11 @@ Do not add screenshots containing decoded proprietary art to the repository. A l
 
 **Acceptance:** each proof resource has a traceable ROM source range and a documented decode procedure; unresolved structures are clearly marked.
 
-**Checkpoint:** `ROM_FORMAT_NOTES.md` now records a research-based AIZ Act 1 intro proof candidate and the player/zone/layout decode dependencies. This is an inventory, not a completed format map: exact profile offsets and several record schemas remain unverified. The next increment is source-tracing those structures to byte ranges before decoder implementation.
+**Checkpoint:** `ROM_FORMAT_NOTES.md` records the exact-profile AIZ Act 1 intro primary/secondary tile and palette ranges. KosinskiM output was checked against reference hashes, and packed-pixel decoding is covered by synthetic tests. Layout, palette-line assignment, and block/chunk schemas are still open, so this remains a partial format map.
 
-**Decoder foundation:** `scripts/rom/rom_data_decoder.gd` now provides bounded 4bpp tile unpacking, Genesis CRAM palette conversion, and tile-atlas image composition. Synthetic checks live in `tests/rom/test_rom_data_decoder.gd`. This code handles uncompressed tile/palette buffers only; compressed streams, address resolution, character mappings, and level layout parsing remain open.
+**Decoder foundation:** `scripts/rom/rom_data_decoder.gd` provides bounded KosinskiM decompression, packed 4bpp tile unpacking, Genesis CRAM palette conversion, and tile-atlas image composition. Synthetic checks live in `tests/rom/test_rom_data_decoder.gd`. `scripts/rom/rom_texture_importer.gd` generates the AIZ Act 1 intro raw tile atlases under `user://` after profile validation. Character mappings and the level layout/block/chunk rendering remain open.
 
-### 1E — Decode and load a proof set · Not started
+### 1E — Decode and load a proof set · In progress
 
 **Tasks:**
 
@@ -139,6 +139,8 @@ Do not add screenshots containing decoded proprietary art to the repository. A l
 - Keep decoded output in local user data; do not check it into the repository.
 
 **Acceptance:** a developer can see the imported character frames, zone art with correct palette, and a level layout in Godot, all generated from the selected local ROM through the documented path.
+
+**Current evidence:** the compatibility screen can build and display the primary AIZ intro tile atlas and caches both primary and secondary tile atlases locally. This is a tile-art proof only; the complete palette/layout mapping and character/level proof scene are not finished.
 
 ### 1F — Make local imports repeatable · Not started
 

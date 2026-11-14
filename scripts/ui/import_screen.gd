@@ -1,6 +1,7 @@
 extends Control
 
 const RomInspector = preload("res://scripts/rom/rom_inspector.gd")
+const RomTextureImporter = preload("res://scripts/rom/rom_texture_importer.gd")
 const CACHE_ROOT := "user://imports"
 
 var _file_dialog: FileDialog
@@ -9,6 +10,9 @@ var _result_label: Label
 var _selected_label: Label
 var _cache_label: Label
 var _inspect_button: Button
+var _texture_button: Button
+var _texture_preview: TextureRect
+var _texture_status: Label
 var _selected_path := ""
 var _last_result: Dictionary = {}
 
@@ -99,12 +103,29 @@ func _build_ui() -> void:
 	preview_button.text = "Open decoder preview"
 	preview_button.pressed.connect(_open_decoder_preview)
 	actions.add_child(preview_button)
+	var import_actions := HBoxContainer.new()
+	content.add_child(import_actions)
+	_texture_button = Button.new()
+	_texture_button.text = "Build AIZ texture proof"
+	_texture_button.disabled = true
+	_texture_button.pressed.connect(_build_aiz_texture_proof)
+	import_actions.add_child(_texture_button)
 
 	_result_label = Label.new()
-	_result_label.text = "The selected file is only read for validation. No import or cache is created yet."
+	_result_label.text = "Check a supported ROM to enable a real AIZ Act 1 texture preview. Generated images stay in the local cache."
 	_result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_result_label.custom_minimum_size = Vector2(0, 52)
 	content.add_child(_result_label)
+	_texture_status = Label.new()
+	_texture_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_texture_status.visible = false
+	content.add_child(_texture_status)
+	_texture_preview = TextureRect.new()
+	_texture_preview.custom_minimum_size = Vector2(0, 256)
+	_texture_preview.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	_texture_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_texture_preview.visible = false
+	content.add_child(_texture_preview)
 
 	var separator := HSeparator.new()
 	content.add_child(separator)
@@ -157,6 +178,11 @@ func _open_decoder_preview() -> void:
 func _select_path(path: String) -> void:
 	_selected_path = path
 	_last_result.clear()
+	_texture_button.disabled = true
+	_texture_preview.texture = null
+	_texture_status.text = ""
+	_texture_preview.visible = false
+	_texture_status.visible = false
 	_selected_label.text = "Selected: %s" % path.get_file()
 	_inspect_button.disabled = false
 	_result_label.text = "Ready to check this file. The source will be opened read-only."
@@ -172,7 +198,8 @@ func _inspect_selected() -> void:
 		return
 	var first: Dictionary = _last_result.get("first_segment", {})
 	var second: Dictionary = _last_result.get("second_segment", {})
-	_result_label.text = "Compatible profile: %s\nSize: %s bytes\nSHA-256: %s\nDetected: %s / %s\nValidation only; importing is not available in this checkpoint." % [
+	_texture_button.disabled = false
+	_result_label.text = "Compatible profile: %s\nSize: %s bytes\nSHA-256: %s\nDetected: %s / %s" % [
 		_last_result.get("profile_id", "unknown"),
 		_last_result.get("byte_size", 0),
 		_last_result.get("sha256", ""),
@@ -180,6 +207,27 @@ func _inspect_selected() -> void:
 		second.get("title", "second image"),
 	]
 	_result_label.modulate = Color("9be2b2")
+
+
+func _build_aiz_texture_proof() -> void:
+	if not _last_result.get("ok", false):
+		return
+	var result: Dictionary = RomTextureImporter.import_aiz_intro(_last_result["image_bytes"])
+	if not result.get("ok", false):
+		_texture_status.text = str(result.get("error", "AIZ texture preview could not be generated."))
+		_texture_status.modulate = Color("ff9c94")
+		return
+	_texture_preview.texture = ImageTexture.create_from_image(result["primary_image"])
+	_texture_preview.visible = true
+	_texture_status.visible = true
+	_texture_status.text = "Real ROM texture preview · AIZ Act 1 intro · %d primary tiles and %d secondary tiles\nGenerated images saved under the local user data folder: %s and %s" % [
+		result["primary_tiles"],
+		result["secondary_tiles"],
+		result["primary_path"],
+		result["secondary_path"],
+	]
+	_texture_status.modulate = Color("9be2b2")
+	_refresh_cache_status()
 
 
 func _show_error(message: String) -> void:

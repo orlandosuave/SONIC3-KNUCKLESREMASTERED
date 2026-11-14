@@ -8,6 +8,10 @@
 
 Create an SMB1R-style PC game for Sonic 3 & Knuckles: a full-campaign remaster with a user-provided compatible ROM flow, a built-in level editor, custom characters, resource packs, and replay modes. Target 60 FPS gameplay and native 32:9 ultrawide support.
 
+### Original-game fidelity requirement
+
+The remaster must include the complete original Sonic 3 & Knuckles experience for the supported ROM version. Preserve every zone, act, route, character, move, animation, enemy, object, boss, special/bonus stage, transition, secret, music cue, and ending. Gameplay behavior—including physics, collision, timing, camera staging, and encounter logic—must match the original. HD art and modern display support are presentation upgrades; they must not remove, replace, or reinterpret original content or change its gameplay behavior. Wider aspect ratios may reveal additional surroundings only where that preserves the original encounter timing and fairness.
+
 “Clone of SMB1R” means adopting its product structure and player/creator features. We will write our own Godot runtime, ROM importer, gameplay code, and tools. Sonic 3 A.I.R. is a reference for Sonic-specific behavior and remaster polish; it is not a code or asset source.
 
 The selected ROM is input to a local validation and import pipeline. The game will not execute the ROM as an emulator. ROM files and extracted/generated game data stay in the user's local application-data directory and are excluded from this public repository and release packages. The repository contains the importer, original implementation, and tooling.

@@ -76,6 +76,7 @@ static func inspect_file(path: String) -> Dictionary:
 		"byte_size": image_bytes.size(),
 		"sha256": sha256,
 		"layout": "two_consecutive_2mib_images",
+		"image_bytes": image_bytes,
 		"first_segment": first_header,
 		"second_segment": second_header,
 	}

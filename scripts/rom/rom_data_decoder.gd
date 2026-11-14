@@ -7,8 +7,10 @@ extends RefCounted
 const BYTES_PER_4BPP_TILE := 32
 const TILE_WIDTH := 8
 const TILE_HEIGHT := 8
+const PIXELS_PER_BYTE := 2
 const MAX_DECODED_TILES := 4096
 const MAX_TILE_COLUMNS := 512
+const MAX_KOSINSKI_OUTPUT_BYTES := 1024 * 1024
 
 
 static func decode_4bpp_tiles(data: PackedByteArray, max_tiles: int = 4096) -> Dictionary:
@@ -28,15 +30,11 @@ static func decode_4bpp_tiles(data: PackedByteArray, max_tiles: int = 4096) -> D
 		pixels.resize(TILE_WIDTH * TILE_HEIGHT)
 		var tile_offset := tile_index * BYTES_PER_4BPP_TILE
 		for y in range(TILE_HEIGHT):
-			var row_offset := tile_offset + y * 4
-			for x in range(TILE_WIDTH):
-				var color_index := 0
-				# Each row stores one byte per bitplane; the most significant bit
-				# is the leftmost pixel, and plane 0 is the low color-index bit.
-				for plane in range(4):
-					var plane_bit := (data[row_offset + plane] >> (7 - x)) & 1
-					color_index |= plane_bit << plane
-				pixels[y * TILE_WIDTH + x] = color_index
+			var row_offset := tile_offset + y * (TILE_WIDTH / PIXELS_PER_BYTE)
+			for pair_index in range(TILE_WIDTH / PIXELS_PER_BYTE):
+				var packed_pixels := data[row_offset + pair_index]
+				pixels[y * TILE_WIDTH + pair_index * 2] = (packed_pixels >> 4) & 0x0F
+				pixels[y * TILE_WIDTH + pair_index * 2 + 1] = packed_pixels & 0x0F
 		tiles.append(pixels)
 	return {"ok": true, "tile_count": tile_count, "tiles": tiles}
 
@@ -60,6 +58,132 @@ static func decode_palette_4bpp(data: PackedByteArray, max_colors: int = 256) ->
 		var blue := _expand_3bit((word >> 9) & 0x07)
 		colors.append(Color(red / 255.0, green / 255.0, blue / 255.0, 1.0))
 	return {"ok": true, "color_count": color_count, "colors": colors}
+
+
+## Decodes the size-prefixed, 16-byte-module Kosinski stream used for tile art.
+## The decoder is bounded by both the declared output size and caller limit.
+static func decode_moduled_kosinski(data: PackedByteArray, max_output_bytes: int = MAX_KOSINSKI_OUTPUT_BYTES) -> Dictionary:
+	if data.size() < 4:
+		return _failure("KosinskiM stream is too short to contain its size and first descriptor.")
+	if max_output_bytes <= 0 or max_output_bytes > MAX_KOSINSKI_OUTPUT_BYTES:
+		return _failure("KosinskiM output limit must be between 1 byte and 1 MiB.")
+	var expected_size := (data[0] << 8) | data[1]
+	if expected_size <= 0 or expected_size > max_output_bytes:
+		return _failure("KosinskiM declared output size exceeds the configured limit.")
+	var reader := {"source": data, "cursor": 2, "descriptor": 0, "bits_left": 0}
+	var output := PackedByteArray()
+	output.resize(expected_size)
+	var written := 0
+	var operations := 0
+	var module_count := 0
+	while written < expected_size:
+		module_count += 1
+		if module_count > 256:
+			return _failure("KosinskiM exceeded the module safety limit.")
+		var module_start := int(reader["cursor"])
+		var module_output_start := written
+		while true:
+			operations += 1
+			if operations > expected_size * 2:
+				return _failure("KosinskiM exceeded the command safety limit.")
+			var first_bit := _kosinski_pop_bit(reader)
+			if not first_bit.get("ok", false):
+				return _failure("KosinskiM control stream is truncated.")
+			if first_bit["bit"] == 1:
+				var literal := _kosinski_read_byte(reader)
+				if not literal.get("ok", false):
+					return _failure("KosinskiM literal is truncated.")
+				if written >= expected_size:
+					return _failure("KosinskiM output exceeds its declared size.")
+				output[written] = literal["value"]
+				written += 1
+				continue
+			var second_bit := _kosinski_pop_bit(reader)
+			if not second_bit.get("ok", false):
+				return _failure("KosinskiM control stream is truncated.")
+			var count := 0
+			var distance := 0
+			if second_bit["bit"] == 1:
+				var low_result := _kosinski_read_byte(reader)
+				var high_result := _kosinski_read_byte(reader)
+				if not low_result.get("ok", false) or not high_result.get("ok", false):
+					return _failure("KosinskiM long match is truncated.")
+				var low: int = low_result["value"]
+				var high: int = high_result["value"]
+				count = high & 7
+				if count == 0:
+					var count_result := _kosinski_read_byte(reader)
+					if not count_result.get("ok", false):
+						return _failure("KosinskiM extended match or terminator is truncated.")
+					count = int(count_result["value"])
+					if count == 0:
+						break
+					if count == 1:
+						continue
+					count += 1
+				else:
+					count += 2
+				distance = 8192 - (((high & 0xF8) << 5) | low)
+			else:
+				var count_bit_a := _kosinski_pop_bit(reader)
+				var count_bit_b := _kosinski_pop_bit(reader)
+				var offset_result := _kosinski_read_byte(reader)
+				if not count_bit_a.get("ok", false) or not count_bit_b.get("ok", false) or not offset_result.get("ok", false):
+					return _failure("KosinskiM short match is truncated.")
+				count = (int(count_bit_a["bit"]) << 1) | int(count_bit_b["bit"])
+				count += 2
+				distance = 256 - int(offset_result["value"])
+			if distance <= 0 or distance > written:
+				return _failure("KosinskiM match refers outside the decoded output (distance %d at byte %d)." % [distance, written])
+			if written + count > expected_size:
+				return _failure("KosinskiM match exceeds its declared output size.")
+			for _copy_index in range(count):
+				output[written] = output[written - distance]
+				written += 1
+		if written < expected_size:
+			if written == module_output_start:
+				return _failure("KosinskiM module ended without producing output.")
+			var source_cursor := int(reader["cursor"])
+			var module_end := (((source_cursor - 2) + 15) & ~15) + 2
+			if module_end <= module_start or module_end > data.size():
+				return _failure("KosinskiM module padding exceeds the source range.")
+			reader["cursor"] = module_end
+			reader["bits_left"] = 0
+	return {"ok": true, "data": output, "output_size": expected_size, "source_consumed": reader["cursor"]}
+
+
+static func _kosinski_pop_bit(reader: Dictionary) -> Dictionary:
+	if int(reader["bits_left"]) == 0:
+		var source: PackedByteArray = reader["source"]
+		var cursor := int(reader["cursor"])
+		if cursor + 1 >= source.size():
+			return {"ok": false}
+		reader["descriptor"] = source[cursor] | (source[cursor + 1] << 8)
+		reader["cursor"] = cursor + 2
+		reader["bits_left"] = 16
+	var descriptor := int(reader["descriptor"])
+	var bit := descriptor & 1
+	reader["descriptor"] = descriptor >> 1
+	reader["bits_left"] = int(reader["bits_left"]) - 1
+	# Kosinski fetches the next descriptor as soon as all current bits are consumed.
+	if int(reader["bits_left"]) == 0:
+		var source: PackedByteArray = reader["source"]
+		var cursor := int(reader["cursor"])
+		if cursor + 1 >= source.size():
+			return {"ok": false}
+		reader["descriptor"] = source[cursor] | (source[cursor + 1] << 8)
+		reader["cursor"] = cursor + 2
+		reader["bits_left"] = 16
+	return {"ok": true, "bit": bit}
+
+
+static func _kosinski_read_byte(reader: Dictionary) -> Dictionary:
+	var source: PackedByteArray = reader["source"]
+	var cursor := int(reader["cursor"])
+	if cursor >= source.size():
+		return {"ok": false}
+	reader["cursor"] = cursor + 1
+	return {"ok": true, "value": source[cursor]}
 
 
 static func compose_tile_image(tiles: Array[PackedByteArray], tile_columns: int, palette: PackedColorArray) -> Dictionary:
