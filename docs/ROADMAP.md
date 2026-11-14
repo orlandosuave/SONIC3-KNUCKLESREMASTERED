@@ -4,7 +4,7 @@ This file is the stage-level source of truth for the project. It lives in the Gi
 
 ## Current stage
 
-**Stage 2 — 60 Hz movement and collision prototype** is complete as of 2026-11-14, following the project owner's successful playtest and approval to close the prototype milestone. **Stage 3 — Native 32:9 camera and display foundation** is next and has not started. Exact ROM parity remains a documented follow-up.
+**Stage 3 — Native 32:9 camera and display foundation** is complete at prototype scope as of 2026-11-14, following the project owner's successful playtests. **Stage 4 — First complete vertical slice** is next. See [Phase 3 closeout](PHASE_3_PLAN.md). Formal performance benchmarking and texture/art review carry into Stage 4; exact ROM parity remains a documented follow-up.
 
 ## Stage overview
 
@@ -13,7 +13,7 @@ This file is the stage-level source of truth for the project. It lives in the Gi
 | 0 | Scope and project foundation | Complete | — |
 | 1 | Compatible ROM intake and data feasibility | Complete | Stage 0 |
 | 2 | 60 Hz movement and collision prototype | Complete | Stage 0; can run alongside Stage 1 |
-| 3 | Native 32:9 camera and display foundation | Not started | Stage 2 |
+| 3 | Native 32:9 camera and display foundation | Complete (prototype scope) | Stage 2 |
 | 4 | First complete vertical slice | Not started | Stages 1–3 |
 | 5 | SMB1R-style editor, packs, and replay modes | Not started | Stable runtime and level format |
 | 6 | Full Sonic 3 & Knuckles campaign | Not started | Stage 4 and campaign data format; can overlap Stage 5 |
@@ -72,27 +72,33 @@ Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.
 
 **Accepted follow-ups:** exact tile sensors/fixed-point behavior, matched-input ROM traces, shared ring expiry, and full checkpoint/world-state fidelity remain tracked in [the ROM audit](PHASE_2_ROM_AUDIT.md). Prototype closure does not claim exact ROM parity.
 
-### Stage 3 — Native 32:9 camera and display foundation
+### Stage 3 — Native 32:9 camera and display foundation · Complete
 
 **Goal:** make 32:9 an actual expanded gameplay view with the user's panoramic screenshot as a detail/composition reference, while preserving crisp pixel-art presentation, vertical play space, sprite proportions, and encounter fairness.
 
-- [ ] Define pixel scaling and base framing from 16:9 through 32:9, calibrated against the 5120×1440 test mode and the supplied panoramic composition reference.
-- [ ] Implement aspect-aware viewport expansion without stretching.
-- [ ] Add camera look-ahead, bounds, and authored clamps for bosses/cutscenes.
-- [ ] Place essential HUD/menu content in configurable safe regions.
-- [ ] Audit spawn triggers, hazards, boss cues, and transitions for fixed-width assumptions.
-- [ ] Choose a 32:9 reference resolution and PC hardware baseline for 60 FPS acceptance.
+- [x] Define base framing and aspect-aware scaling from 16:9 through 32:9, including the 5120×1440 test mode. Per owner scope clarification, texture sharpness and panoramic art calibration move to Stage 4 when gameplay textures are integrated.
+- [x] Implement aspect-aware viewport expansion without stretching (actual viewport resize regression at 16:9, 21:9, and 32:9).
+- [x] Add camera look-ahead, bounds, and authored clamps for bosses/cutscenes (original encounter fixture with side masks, warning cue, physical gates, and camera release; campaign fidelity remains later work).
+- [x] Place essential HUD/menu content in configurable safe regions, with saved width/margin options, live HUD settings, and scrollable menus.
+- [x] Audit the implemented prototype triggers, hazards, cues, and transitions for fixed-width assumptions; owner playtests pass. Campaign spawners and bosses remain later content.
+- [x] Establish 5120×1440 as the 32:9 reference mode. Owner reports 60 FPS on the current setup; formal hardware baseline and benchmark measurements carry into Stage 4.
+
+**Playtest update (2026-11-14):** the project owner confirms camera following works across multiple resolutions and reports hazards and transitions working too. This records prototype playtest acceptance; exact tested resolutions and measured timing were not supplied. The owner also confirms menus/settings work, reports 60 FPS on the current setup, and accepts the hazard check. Additional automated hazard comparisons are optional regression coverage. The formal hardware baseline and benchmarks at both reference resolutions remain unrecorded.
 
 **Exit criteria:** traversal, hazards, a boss, transitions, and menus pass at 16:9, 21:9, and 32:9 without changing simulation timing.
+
+**Closeout:** accepted at prototype scope on 2026-11-14. The boss is an original staging fixture, not campaign combat. Owner confirms aspect ratio, camera behavior, hazards, menus, and good performance. Automated camera/encounter checks cover all three aspect ratios. Formal performance measurement is deferred to Stage 4; this milestone does not claim a measured hardware baseline.
 
 ### Stage 4 — First complete vertical slice
 
 **Goal:** deliver one polished act from title/start through completion, proving the importer, movement, camera, and user experience together.
 
 - [ ] Build one complete act with traversal, checkpoint, set piece/boss, and completion flow.
+- [ ] Record the Windows hardware baseline and benchmark 60 FPS at 1920×1080 and 5120×1440 (carried from Stage 3 prototype closeout).
 - [ ] Reconstruct the act's required level layout, collision, object placement, and original character frames/animations, then load them through the local import/cache path.
 - [ ] Add pause/options, save/checkpoint behavior, gamepad controls, and return-to-menu.
 - [ ] Add first-pass sound/music hooks and readable HUD.
+- [ ] Review texture sharpness, pixel scaling, and panoramic art composition using integrated gameplay textures (deferred from Stage 3 by the project owner).
 - [ ] Validate at 16:9 and native 32:9.
 
 **Exit criteria:** a new player can finish the act; restart/resume works; the documented baseline sustains 60 FPS.

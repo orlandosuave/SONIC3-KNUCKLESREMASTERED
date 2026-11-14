@@ -166,3 +166,7 @@ Until those implementation decisions are recorded, use one known ROM revision, k
 - [Sonic 3 A.I.R. official site](https://sonic3air.org/) and [source repository](https://github.com/Eukaryot/sonic3air): remaster presentation, controls, and modding reference.
 - [Sonic 3 A.I.R. releases](https://github.com/Eukaryot/sonic3air/releases): stable/test packaging, platform builds, release notes, ultrawide fixes, and mod workflow improvements.
 - [Sonic 3 / Sonic & Knuckles disassembly](https://github.com/sonicretro/skdisasm): technical research into zone data, decompression, lock-on content, and event-driven behavior.
+
+## Prototype milestone acceptance — 2026-11-14
+
+Phase 3 is accepted at prototype scope following owner playtests of camera behavior, aspect ratios, hazards, transitions, menus, and reported 60 FPS performance. The encounter fixture demonstrates staging rather than campaign boss combat. Formal Windows hardware/reference-resolution benchmarking carries into Phase 4. Texture sharpness and panoramic art calibration are also deferred to Phase 4 when gameplay textures are integrated. These deferrals do not remove the release quality requirements.

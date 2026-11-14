@@ -10,6 +10,10 @@ run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/description="An original-content classic platformer project with native ultrawide support."
 
+[autoload]
+
+UiPreferences="*res://scripts/ui/ui_preferences.gd"
+
 [physics]
 
 common/physics_ticks_per_second=60
@@ -19,8 +23,9 @@ common/max_physics_steps_per_frame=8
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/size/mode=0
 window/size/window_width_override=1600
-window/size/window_height_override=900
+window/size/window_height_override=450
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 

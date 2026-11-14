@@ -36,12 +36,11 @@ func _build_ui() -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
+	var frame := preload("res://scripts/ui/menu_frame.gd").new()
+	add_child(frame)
 
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(620, 0)
+	panel.custom_minimum_size = Vector2(960, 0)
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color("162235")
 	panel_style.set_corner_radius_all(12)
@@ -50,7 +49,7 @@ func _build_ui() -> void:
 	panel_style.content_margin_top = 26
 	panel_style.content_margin_bottom = 26
 	panel.add_theme_stylebox_override("panel", panel_style)
-	center.add_child(panel)
+	frame.mount_panel(panel)
 
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 16)
@@ -65,6 +64,9 @@ func _build_ui() -> void:
 	subtitle.text = "Select your combined ROM to check whether it matches the supported profile."
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(subtitle)
+
+	var options := preload("res://scripts/ui/display_options.gd").new()
+	content.add_child(options)
 
 	var drop_area := PanelContainer.new()
 	drop_area.custom_minimum_size = Vector2(0, 92)
@@ -87,7 +89,7 @@ func _build_ui() -> void:
 	_selected_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(_selected_label)
 
-	var actions := HBoxContainer.new()
+	var actions := HFlowContainer.new()
 	actions.add_theme_constant_override("separation", 10)
 	content.add_child(actions)
 	var choose_button := Button.new()
@@ -107,6 +109,10 @@ func _build_ui() -> void:
 	prototype_button.text = "Play movement prototype"
 	prototype_button.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/movement_prototype.tscn"))
 	actions.add_child(prototype_button)
+	var encounter_button := Button.new()
+	encounter_button.text = "Play encounter staging test"
+	encounter_button.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/encounter_prototype.tscn"))
+	content.add_child(encounter_button)
 	var import_actions := HBoxContainer.new()
 	content.add_child(import_actions)
 	_texture_button = Button.new()

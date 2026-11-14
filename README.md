@@ -4,7 +4,9 @@ An SMB1R-style fan project for the complete Sonic 3 & Knuckles campaign. The goa
 
 The project now includes a standalone movement and collision prototype with original placeholder visuals. Launch the project, then choose **Play movement prototype** from the intake screen. The room runs on Godot's fixed 60 Hz physics tick and does not require a ROM.
 
-Phase 2 is complete as a playable prototype. Exact ROM fidelity gaps are tracked in the [ROM audit](docs/PHASE_2_ROM_AUDIT.md). Phase 3 (native 32:9 camera and display) is next.
+Choose **Play encounter staging test** to try the Phase 3 character-centered encounter camera and ultrawide side masks. Move right to enter, wait through the warning and placeholder boss demo, then continue to the goal. **R** restarts this test. It uses original placeholder visuals and has no boss attacks yet.
+
+Phase 2 is complete as a playable prototype. Exact ROM fidelity gaps are tracked in the [ROM audit](docs/PHASE_2_ROM_AUDIT.md). Phase 3 (native 32:9 camera and display) is complete at prototype scope following successful owner playtests. See the [Phase 3 closeout](docs/PHASE_3_PLAN.md) for validation and follow-ups. Phase 4, the first complete playable act, is next.
 
 ## Project documents
 
@@ -38,3 +40,5 @@ godot --headless --path . --fixed-fps 120 --script res://tests/gameplay/test_pha
 ```
 
 These tests require no ROM or imported assets.
+
+HUD placement can be adjusted from the intake menu or **HUD settings** in either prototype. Choose centered 16:9, centered 21:9, or full-window placement and an edge margin. Changes save automatically; menus scroll when their contents exceed the available height.

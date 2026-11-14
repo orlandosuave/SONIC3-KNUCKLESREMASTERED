@@ -9,9 +9,8 @@ func _ready() -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
+	var frame := preload("res://scripts/ui/menu_frame.gd").new()
+	add_child(frame)
 
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(760, 0)
@@ -23,7 +22,7 @@ func _ready() -> void:
 	panel_style.content_margin_top = 28
 	panel_style.content_margin_bottom = 28
 	panel.add_theme_stylebox_override("panel", panel_style)
-	center.add_child(panel)
+	frame.mount_panel(panel)
 
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 18)

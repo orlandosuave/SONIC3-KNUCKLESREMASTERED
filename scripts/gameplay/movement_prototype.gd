@@ -37,6 +37,7 @@ func _physics_process(_delta: float) -> void:
 func restore_checkpoint_room() -> void:
 	simulation_ticks = checkpoint_ticks
 	completed = false
+	camera.snap_to_target()
 	for area in get_tree().get_nodes_in_group("prototype_collectible"):
 		area.free()
 	for ring in get_tree().get_nodes_in_group("prototype_spill"):
@@ -80,14 +81,10 @@ func _build_room() -> void:
 	player = PlayerController.new()
 	player.position = Vector2(100, FLOOR_Y - 50)
 	add_child(player)
-	camera = Camera2D.new()
-	camera.position_smoothing_enabled = true
-	camera.position_smoothing_speed = 6.0
-	camera.limit_left = 0
-	camera.limit_right = int(ROOM_WIDTH)
-	camera.limit_top = 0
-	camera.limit_bottom = 720
-	player.add_child(camera)
+	camera = preload("res://scripts/gameplay/prototype_camera.gd").new()
+	camera.target = player
+	camera.world_bounds = Rect2(0, 0, ROOM_WIDTH, 720)
+	add_child(camera)
 	camera.make_current()
 	for point in RING_POSITIONS:
 		_add_ring(point)
@@ -200,10 +197,11 @@ func _add_trigger(point: Vector2, size: Vector2, kind: String) -> void:
 func _build_hud() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
+	var safe := preload("res://scripts/ui/safe_region.gd").new()
+	layer.add_child(safe)
 	var panel := PanelContainer.new()
-	panel.position = Vector2(16, 16)
 	panel.custom_minimum_size = Vector2(340, 0)
-	layer.add_child(panel)
+	safe.add_child(panel)
 	hud = Label.new()
 	hud.add_theme_color_override("font_color", Color("f1f5fa"))
 	hud.add_theme_font_size_override("font_size", 15)
@@ -211,14 +209,47 @@ func _build_hud() -> void:
 	panel.add_child(hud)
 	var help := Label.new()
 	help.text = "Move: A/D or ←/→  Jump: Space/Z  Spin Dash: hold S/↓ + tap Space/Z, release Down  Esc: menu"
-	help.position = Vector2(18, 680)
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.add_theme_color_override("font_color", Color("e1e9f2"))
-	layer.add_child(help)
+	safe.add_child(help)
+	help.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	help.offset_top = -48
 	var exit_button := Button.new()
 	exit_button.text = "Back"
-	exit_button.position = Vector2(330, 16)
+
 	exit_button.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/main.tscn"))
-	layer.add_child(exit_button)
+	safe.add_child(exit_button)
+	exit_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	exit_button.offset_left = -80
+	exit_button.offset_bottom = 32
+	var options_layer := CanvasLayer.new()
+	options_layer.layer = 10
+	add_child(options_layer)
+	var options_dialog := CenterContainer.new()
+	options_dialog.name = "HudSettingsOverlay"
+	options_layer.add_child(options_dialog)
+	options_dialog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	options_dialog.mouse_filter = Control.MOUSE_FILTER_STOP
+	var options_panel := PanelContainer.new()
+	options_panel.custom_minimum_size.x = 560
+	options_dialog.add_child(options_panel)
+	var options_content := VBoxContainer.new()
+	options_panel.add_child(options_content)
+	var options := preload("res://scripts/ui/display_options.gd").new()
+	options_content.add_child(options)
+	var close_options := Button.new()
+	close_options.text = "Close settings"
+	close_options.pressed.connect(func(): options_dialog.hide())
+	options_content.add_child(close_options)
+	options_dialog.hide()
+	var options_button := Button.new()
+	options_button.text = "HUD settings"
+	safe.add_child(options_button)
+	options_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	options_button.offset_left = -220
+	options_button.offset_right = -90
+	options_button.offset_bottom = 32
+	options_button.pressed.connect(func(): options_dialog.show())
 	_update_hud()
 
 func _update_hud() -> void:
