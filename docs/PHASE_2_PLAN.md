@@ -8,10 +8,10 @@ Phase 2 establishes the project’s 60 Hz movement and collision loop in an orig
 
 - **Normal ground movement:** `$600` max speed, `$00C` acceleration, `$080` braking/deceleration, plus slope resistance, converted from 8.8 fixed point at 60 Hz.
 - **Jump:** `$680` impulse rotated by the floor angle; holding Jump preserves the arc, releasing it caps upward speed at `-$400`, and upward speed is capped at `-$FC0`.
-- **Air state:** twice the ground acceleration for directional control, disabled for roll-jumps; ROM-style `x_vel >> 5` peak drag applies once upward speed falls below 4 px/frame.
+- **Air state:** twice the ground acceleration for directional control, disabled for roll-jumps; Signed 8.8 `x_vel >> 5` peak drag applies only while rising at up to 4 px/frame; falling does not apply it. Same-direction air input preserves existing overspeed.
 - **Roll:** Down enters duck below `$100` ground speed and starts a roll at or above it. Rolling coasts down at half the ground acceleration, applies `$20` braking only when input reverses direction, and uses the ROM's `$50` slope repel (full downhill, quarter-strength uphill). Horizontal roll speed clamps at `$1000`; matching-direction input does not accelerate rolling. Roll-jumps retain the roll-jump air-control lockout.
 - **Slope responses:** At rest, normal slope resistance starts only when the ROM's `$0D` force threshold is reached. After collision, `Player_SlopeRepel` adds a 30-frame movement lock and downhill push on slow slopes, or transitions Sonic into the air past `$30` angle units. Godot slope stopping is disabled so slope-force-driven rolling can progress down the prototype's hills.
-- **Player collision size:** 9×19 px standing; 7×14 px rolling or airborne, with the feet kept at the same position during the change.
+- **Player collision size:** 9×19 px standing, ducking, falling without a roll, and roll-jumping; 7×14 px for ground rolls and normal jumps. The prototype keeps feet aligned when resizing; exact ROM center/subpixel adjustments remain a collision fidelity gap.
 - **Spin Dash:** while ducking, a Jump press starts charging; held Down maintains charge; later Jump presses add `$200` up to `$800`, with the ROM’s `$20`-based decay; releasing Down launches using the `$800..$C00` speed table and the player’s facing direction.
 - **Collision and room loop:** floor, wall, and ceiling contacts are reported; rings, damage/invulnerability, scattered-ring recovery, checkpoints, falling reset, and a goal trigger are present. Physics runs at 60 Hz independently of render pacing.
 

@@ -4,7 +4,6 @@ class_name PrototypePlayer
 ## S3&K normal Sonic physics. ROM values are 8.8 fixed point per 60 Hz frame;
 ## multiplying by 60 converts velocity to px/s and by 3600 converts acceleration.
 const MAX_SPEED := 360.0 # $600 = 6 px/frame
-const ROLL_MAX_SPEED := 720.0 # 2 * Max_speed
 const ACCELERATION := 168.75 # $00C = 0.046875 px/frame^2
 const AIR_ACCELERATION := 337.5 # 2 * Acceleration
 const BRAKE := 1800.0 # $080 = 0.5 px/frame^2
@@ -18,7 +17,7 @@ const SLOPE_STASIS_THRESHOLD := 13 # $0D: minimum slope force from rest
 const SLOPE_MOVE_LOCK_FRAMES := 30
 const SLOPE_REPEL_MIN_ANGLE := 24 # $18 angle units (33.75 degrees)
 const SLOPE_SLIP_ANGLE := 48 # $30 angle units (67.5 degrees)
-const SLOPE_REPEL_MAX_SPEED := 600.0 # $280 = 10 px/frame
+const SLOPE_REPEL_MAX_SPEED := 150.0 # $280 = 2.5 px/frame
 const SLOPE_REPEL_SPEED := 30.0 # $80 = 0.5 px/frame
 const GROUND_PROBE_OFFSETS := [-5.0, 0.0, 5.0]
 const GROUND_PROBE_START := -2.0
@@ -29,7 +28,6 @@ const JUMP_IMPULSE := 390.0 # $680 = 6.5 px/frame
 const JUMP_RELEASE_SPEED := -240.0 # $400 = 4 px/frame upward
 const MAX_RISE_SPEED := -945.0 # $FC0 = 15.75 px/frame
 const GRAVITY := 787.5 # $038 = 0.21875 px/frame^2
-const MAX_FALL_SPEED := 900.0 # $F00 = 15 px/frame
 const SPINDASH_CHARGE_STEP := 512.0 # $200, cap $800
 const SPINDASH_DECAY_RATE := 1.0 / 32.0
 const SPINDASH_LAUNCH_SPEEDS := [480.0, 510.0, 540.0, 570.0, 600.0, 630.0, 660.0, 690.0, 720.0]
@@ -38,6 +36,7 @@ var facing := 1
 var rolling := false
 var ducking := false
 var roll_jumping := false
+var jumping := false
 var rings := 0
 var invulnerability_frames := 0
 var hurt := false
@@ -100,14 +99,10 @@ func _physics_process(delta: float) -> void:
 	var down := Input.is_action_pressed("roll")
 	var jump_pressed := Input.is_action_just_pressed("jump")
 	var spindash_released := false
-	var jump_started_this_tick := false
-	if direction != 0.0:
-		facing = int(signf(direction))
 	var grounded := _is_grounded_for_jump_and_movement()
-	# Sonic_MdRoll dispatches Sonic_Jump directly. Use the same ROM-style floor
-	# support probes for this state so slopes don't depend on CharacterBody's
-	# more restrictive is_on_floor() classification.
-	var can_jump_from_roll := rolling and not roll_jumping and grounded
+	if direction != 0.0 and not spindash_charging:
+		if (not grounded and not roll_jumping) or (grounded and ground_speed * direction >= 0):
+			facing = int(signf(direction))
 
 	# SonicKnux_Roll enters ducking below $100 ground speed. SonicKnux_Spindash
 	# starts on a fresh jump press while ducking; held Down maintains the charge.
@@ -119,9 +114,11 @@ func _physics_process(delta: float) -> void:
 		rolling = true
 		ducking = false
 	if spindash_charging:
-		spindash_charge = maxf(0.0, spindash_charge - floorf(spindash_charge * SPINDASH_DECAY_RATE))
-		if jump_pressed:
-			spindash_charge = minf(2048.0, spindash_charge + SPINDASH_CHARGE_STEP)
+		# loc_11C5E branches to release before decay or another charge tap.
+		if down:
+			spindash_charge = maxf(0.0, spindash_charge - floorf(spindash_charge * SPINDASH_DECAY_RATE))
+			if jump_pressed:
+				spindash_charge = minf(2048.0, spindash_charge + SPINDASH_CHARGE_STEP)
 		if not down:
 			# Counter is stored as the high byte in the ROM; every $200 tap
 			# advances two entries in the half-pixel-per-frame launch table.
@@ -137,11 +134,36 @@ func _physics_process(delta: float) -> void:
 		spindash_charging = true
 		spindash_charge = 0.0
 		last_event = "Spin Dash charging"
+	if spindash_released:
+		_update_collision_pose()
+		queue_redraw()
+		return
 	if spindash_charging:
 		velocity = Vector2.ZERO
 		_update_collision_pose()
 		queue_redraw()
 		return
+
+	if jump_pressed and grounded and not spindash_released and _has_jump_clearance():
+		ground_angle = _read_ground_angle()
+		velocity = Vector2(cos(ground_angle), sin(ground_angle)) * ground_speed
+		velocity += Vector2(sin(ground_angle), -cos(ground_angle)) * JUMP_IMPULSE
+		roll_jumping = rolling
+		jumping = true
+		rolling = true
+		ducking = false
+		airborne = true
+		last_event = "Roll jump" if roll_jumping else "Jump"
+		_update_collision_pose()
+		queue_redraw()
+		# Sonic_Jump discards the ground-dispatch return address. Air movement
+		# begins on the following update, not during the takeoff update.
+		return
+	if not grounded:
+		if jumping and not Input.is_action_pressed("jump"):
+			velocity.y = maxf(velocity.y, JUMP_RELEASE_SPEED)
+		elif not jumping:
+			velocity.y = maxf(velocity.y, MAX_RISE_SPEED)
 
 	if grounded and not spindash_released:
 		ground_angle = _read_ground_angle()
@@ -164,8 +186,8 @@ func _physics_process(delta: float) -> void:
 				if absf(ground_speed) < MAX_SPEED:
 					ground_speed = move_toward(ground_speed, desired, ACCELERATION * delta)
 			else:
-				ground_speed = move_toward(ground_speed, 0.0, BRAKE * delta)
-		else:
+				ground_speed = _apply_ground_brake(ground_speed, direction, delta)
+		elif direction == 0.0:
 			ground_speed = move_toward(ground_speed, 0.0, FRICTION * delta)
 		velocity = tangent * ground_speed
 		if rolling:
@@ -173,56 +195,42 @@ func _physics_process(delta: float) -> void:
 			velocity.x = clampf(velocity.x, -960.0, 960.0)
 	elif not grounded:
 		ground_speed = velocity.x
-		if direction != 0.0 and not roll_jumping and not (jump_pressed and can_jump_from_roll):
-			velocity.x = move_toward(velocity.x, direction * MAX_SPEED, AIR_ACCELERATION * delta)
+		if direction != 0.0 and not roll_jumping:
+			velocity.x = _apply_air_direction(velocity.x, direction, delta)
 		# ROM releases the jump button to cap upward speed, independent of the
 		# edge; holding it lets gravity extend the arc. Roll-jumps skip air steer.
-		if velocity.y >= JUMP_RELEASE_SPEED:
+		if velocity.y >= JUMP_RELEASE_SPEED and velocity.y < 0.0:
 			velocity.x = _rom_peak_drag(velocity.x)
 
-	if jump_pressed and (grounded or can_jump_from_roll):
-		if can_jump_from_roll:
-			ground_angle = _read_ground_angle()
-		# The ROM rotates the jump vector by the floor angle (sin(theta), -cos(theta)).
-		velocity.x += JUMP_IMPULSE * sin(ground_angle)
-		velocity.y -= JUMP_IMPULSE * cos(ground_angle)
-		# Sonic_Jump branches on the Roll bit as it existed when the jump began.
-		roll_jumping = rolling or can_jump_from_roll
-		rolling = roll_jumping
-		ducking = false
-		airborne = true
-		jump_started_this_tick = true
-		last_event = "Roll jump" if roll_jumping else "Jump"
-	elif Input.is_action_just_released("jump") and airborne and velocity.y < JUMP_RELEASE_SPEED:
-		velocity.y = JUMP_RELEASE_SPEED
 
 	_update_collision_pose()
-	var apply_gravity_after_move := (airborne or not grounded) and not spindash_released and not jump_started_this_tick
-	if apply_gravity_after_move:
-		velocity.y = maxf(MAX_RISE_SPEED, velocity.y)
+	var apply_gravity_after_move := (airborne or not grounded) and not spindash_released
+	var incoming_velocity := velocity
 	move_and_slide()
 	# Automatic snapping is disabled by upward world-space velocity, including
 	# uphill tangent motion. Maintain existing ground attachment explicitly.
 	# Jump takeoff must never use this snap.
-	if grounded and not jump_started_this_tick:
+	if grounded:
 		apply_floor_snap()
 	# MoveSprite_TestGravity first moves by the current velocity, then adds $38
 	# gravity. Keep that order so the jump's first frame uses the full $680 impulse.
 	if apply_gravity_after_move and not is_on_floor():
-		velocity.y = minf(MAX_FALL_SPEED, velocity.y + GRAVITY * delta)
+		velocity.y += GRAVITY * delta
 
 	# A tangent to an uphill floor has negative Y velocity. Test motion against
 	# the contact normal instead of world Y so uphill rolling remains grounded.
 	var support := _get_ground_support()
 	var touching_floor := not support.is_empty()
 	var moving_away_from_floor := touching_floor and not grounded and velocity.dot(support.normal) > GROUND_SEPARATION_SPEED
-	if touching_floor and not moving_away_from_floor and not jump_started_this_tick:
+	if touching_floor and not moving_away_from_floor:
 		airborne = false
 		roll_jumping = false
+		jumping = false
+		if not grounded: rolling = false
 		ground_angle = _angle_from_support(support.normal)
 		var floor_tangent := Vector2(cos(ground_angle), sin(ground_angle))
 		if not grounded:
-			ground_speed = velocity.dot(floor_tangent)
+			ground_speed = _landing_ground_speed(incoming_velocity + Vector2(0, GRAVITY * delta), ground_angle)
 		velocity = floor_tangent * ground_speed
 		_apply_slope_repel(delta)
 	else:
@@ -283,7 +291,8 @@ func _apply_rom_slope_force(speed: float, angle: float, is_rolling: bool, delta:
 	# The ROM multiplies the angle sine by $20 when walking and $50 when rolling.
 	# Opposing roll-slope force is quarter strength; downhill force stays full.
 	var coefficient := ROLL_REPEL_RAW if is_rolling else SLOPE_RESIST_RAW
-	var force_raw := int(sin(angle) * float(coefficient))
+	var sine_raw := int(sin(angle) * 256.0)
+	var force_raw := (sine_raw * coefficient) >> 8
 	if is_rolling and speed != 0.0 and signf(float(force_raw)) != signf(speed):
 		force_raw = floori(float(force_raw) / 4.0)
 	if not is_rolling and speed == 0.0 and absi(force_raw) < SLOPE_STASIS_THRESHOLD:
@@ -294,13 +303,11 @@ func _apply_roll_direction(speed: float, direction: float, delta: float) -> floa
 	# Sonic_RollSpeed does not accelerate a roll. Matching-direction input only
 	# changes facing; opposite input subtracts $20 and bottoms out at +/-$80.
 	if direction < 0.0 and speed > 0.0:
-		speed = move_toward(speed, 0.0, ROLL_BRAKE * delta)
-		if speed == 0.0:
-			speed = -SLOPE_REPEL_SPEED
+		speed -= ROLL_BRAKE * delta
+		if speed < 0.0: speed = -SLOPE_REPEL_SPEED
 	elif direction > 0.0 and speed < 0.0:
-		speed = move_toward(speed, 0.0, ROLL_BRAKE * delta)
-		if speed == 0.0:
-			speed = SLOPE_REPEL_SPEED
+		speed += ROLL_BRAKE * delta
+		if speed >= 0.0: speed = SLOPE_REPEL_SPEED
 	return speed
 
 func _apply_slope_repel(delta: float) -> void:
@@ -320,8 +327,9 @@ func _apply_slope_repel(delta: float) -> void:
 	velocity = Vector2(cos(ground_angle), sin(ground_angle)) * ground_speed
 
 func _update_collision_pose() -> void:
-	# ROM radii are 9x19 standing and 7x14 while rolling or airborne.
-	var compact := rolling or ducking or airborne
+	# Sonic_Jump restores default radii for a roll-jump. Ducking and walking
+	# off a ledge also retain the standing radii; normal jumps use 7x14.
+	var compact := rolling and not roll_jumping
 	var target_radius := 7.0 if compact else 9.0
 	var target_height := 28.0 if compact else 38.0
 	# Rebuilding the physics shape every tick can invalidate resting contacts.
@@ -330,10 +338,39 @@ func _update_collision_pose() -> void:
 		capsule_shape.height = target_height
 		player_collider.position.y = -target_height * 0.5
 
+func _landing_ground_speed(incoming: Vector2, angle: float) -> float:
+	# loc_11F9C/loc_11FAE/loc_11FC2: shallow floor uses X, moderate
+	# slopes use half Y, steep slopes use capped Y in the downhill direction.
+	var units := absf(angle) * 256.0 / TAU
+	if units < 16.0: return incoming.x
+	var raw_y := roundi(incoming.y * 256.0 / 60.0)
+	if units < 32.0: raw_y >>= 1
+	else: raw_y = mini(raw_y, 0xFC0)
+	return float(raw_y) * 60.0 / 256.0 * signf(angle)
+
+func _has_jump_clearance() -> bool:
+	# ROM requires six pixels overhead along the surface normal. This uses
+	# the prototype shape; ROM tile probes remain a separate fidelity gap.
+	var normal := Vector2(sin(_read_ground_angle()), -cos(_read_ground_angle()))
+	return not test_move(global_transform, normal * 6.0)
+
+func _apply_ground_brake(speed: float, direction: float, delta: float) -> float:
+	var next := speed + direction * BRAKE * delta
+	if (direction < 0 and next < 0) or (direction > 0 and next >= 0):
+		return direction * 30.0 # sub_113F6/sub_11482: +/-$80 reversal.
+	return next
+
+func _apply_air_direction(speed: float, direction: float, delta: float) -> float:
+	# Preserve existing overspeed when input points in its direction.
+	if speed * direction >= MAX_SPEED: return speed
+	var next := speed + direction * AIR_ACCELERATION * delta
+	return minf(next, MAX_SPEED) if direction > 0 else maxf(next, -MAX_SPEED)
+
 func _rom_peak_drag(speed: float) -> float:
-	# Sonic_ChgJumpDir subtracts arithmetic speed/32, toward zero, per ROM frame.
-	var delta_speed := floori(absf(speed) / 32.0)
-	return move_toward(speed, 0.0, float(delta_speed))
+	# Arithmetic shift is applied to signed 8.8 velocity, not px/second.
+	var raw := roundi(speed * 256.0 / 60.0)
+	var slowed := raw - (raw >> 5)
+	return float(slowed) * 60.0 / 256.0
 
 func _update_contact_text() -> void:
 	var contacts: PackedStringArray = []
@@ -344,7 +381,7 @@ func _update_contact_text() -> void:
 
 func _draw() -> void:
 	var color := Color("ffdf3d") if invulnerability <= 0.0 or (invulnerability_frames / 8) % 2 == 0 else Color("ffffff")
-	var compact := rolling or ducking or airborne
+	var compact := rolling and not roll_jumping
 	var radius := 12.0 if compact else 16.0
 	var center_y := -14.0 if compact else -19.0
 	draw_circle(Vector2(0, center_y), radius, color)
@@ -370,6 +407,7 @@ func take_damage(hazard_x: float = NAN) -> void:
 		airborne = true
 		rolling = false
 		roll_jumping = false
+		jumping = false
 	else:
 		begin_death()
 
@@ -384,6 +422,7 @@ func begin_death() -> void:
 	spindash_charging = false
 	rolling = false
 	roll_jumping = false
+	jumping = false
 	ducking = false
 	airborne = true
 	ground_speed = 0.0
@@ -405,6 +444,7 @@ func reset_to_checkpoint() -> void:
 	rolling = false
 	ducking = false
 	roll_jumping = false
+	jumping = false
 	airborne = false
 	slope_move_lock = 0
 	invulnerability_frames = 0
