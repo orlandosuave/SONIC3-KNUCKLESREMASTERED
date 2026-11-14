@@ -42,7 +42,7 @@ Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.
 
 - [x] **1A — Identify the first input profile:** document the supplied image's container, internal layout, region fields, size, and SHA-256 fingerprint.
 - [x] **1B — Implement an intake inspector:** reusable validation for raw `.md` and single-image `.zip` inputs, with specific errors.
-- [ ] **1C — Add the intake experience:** file picker, drag/drop, clear compatibility results, and safe local storage location.
+- [ ] **1C — Add the intake experience:** initial screen is implemented in `scenes/main.tscn` and `scripts/ui/import_screen.gd`; Godot-run acceptance with valid/invalid files is pending.
 - [ ] **1D — Map the ROM data:** identify the source structures and decoding steps for a small visual and level-data proof set.
 - [ ] **1E — Decode and load the proof set:** player sprite/animation, zone graphics/palette, and a compact level layout shown in Godot.
 - [ ] **1F — Make local imports repeatable:** versioned cache manifest, source/output hashes, validation, and safe rebuild behavior.

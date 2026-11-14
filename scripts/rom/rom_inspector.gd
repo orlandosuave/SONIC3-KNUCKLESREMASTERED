@@ -49,7 +49,12 @@ static func inspect_file(path: String) -> Dictionary:
 	if image_bytes.size() != SUPPORTED_SIZE:
 		return _failure("Unsupported ROM size: expected 4 MiB (4,194,304 bytes).")
 
-	var sha256 := image_bytes.sha256_text().to_lower()
+	var hash_context := HashingContext.new()
+	if hash_context.start(HashingContext.HASH_SHA256) != OK:
+		return _failure("Could not calculate the ROM fingerprint.")
+	if hash_context.update(image_bytes) != OK:
+		return _failure("Could not calculate the ROM fingerprint.")
+	var sha256 := hash_context.finish().hex_encode().to_lower()
 	if sha256 != SUPPORTED_SHA256:
 		return _failure("This image is not the currently supported, inspected 4 MiB lock-on profile.")
 
