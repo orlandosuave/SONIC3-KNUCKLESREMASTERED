@@ -12,3 +12,4 @@ Desktop.ini
 # User-provided game data and local builds
 /user_data/
 /builds/
+/local_reference/
