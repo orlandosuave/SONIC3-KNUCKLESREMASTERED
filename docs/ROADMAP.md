@@ -4,7 +4,7 @@ This file is the stage-level source of truth for the project. It lives in the Gi
 
 ## Current stage
 
-**Stage 1 — ROM intake and data feasibility spike** is complete. The next stage is the movement/collision prototype. One exact combined-ROM profile is supported, and the AIZ tile-art proof is cached locally through the Godot intake screen.
+**Stage 2 — 60 Hz movement and collision prototype** is complete as of 2026-11-14, following the project owner's successful playtest and approval to close the prototype milestone. **Stage 3 — Native 32:9 camera and display foundation** is next and has not started. Exact ROM parity remains a documented follow-up.
 
 ## Stage overview
 
@@ -12,7 +12,7 @@ This file is the stage-level source of truth for the project. It lives in the Gi
 |---|---|---|---|
 | 0 | Scope and project foundation | Complete | — |
 | 1 | Compatible ROM intake and data feasibility | Complete | Stage 0 |
-| 2 | 60 Hz movement and collision prototype | Not started | Stage 0; can run alongside Stage 1 |
+| 2 | 60 Hz movement and collision prototype | Complete | Stage 0; can run alongside Stage 1 |
 | 3 | Native 32:9 camera and display foundation | Not started | Stage 2 |
 | 4 | First complete vertical slice | Not started | Stages 1–3 |
 | 5 | SMB1R-style editor, packs, and replay modes | Not started | Stable runtime and level format |
@@ -54,17 +54,23 @@ Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.
 
 **Input provided:** the project owner supplied a combined image privately for local analysis. Never commit or attach ROM/generated game data.
 
-### Stage 2 — 60 Hz movement and collision prototype
+### Stage 2 — 60 Hz movement and collision prototype · Complete
+
+**Status:** Complete (prototype scope, 2026-11-14). See [Phase 2 plan](PHASE_2_PLAN.md). Delivered: a self-contained room and original placeholder player art, launched from the intake screen.
 
 **Goal:** establish responsive classic Sonic movement with simulation behavior that does not vary with rendering rate.
 
-- [ ] Fix the simulation contract at 60 updates per second.
-- [ ] Implement acceleration, friction, braking, top speed, jumping, slopes, rolling, and inertia.
-- [ ] Implement ground, wall, and ceiling collision plus airborne transitions.
-- [ ] Add rings, damage, ring loss/recollection, death, and checkpoint reset.
-- [ ] Add debug readouts for speed, movement state, collision contacts, and simulation/render timing.
+- [x] Fix the simulation contract at 60 updates per second.
+- [x] Implement reference-based acceleration, friction, braking, top speed, jumping, slopes, rolling, and inertia, informed by the local disassembly. Matched ROM frame traces remain a fidelity follow-up.
+- [x] Implement ground collision and airborne transitions; add wall/ceiling contacts and slope test geometry.
+- [x] Add rings, damage, ring loss/recollection, death, and checkpoint reset.
+- [x] Add debug readouts for speed, movement state, collision contacts, and simulation/render timing.
 
 **Exit criteria:** a complete test room is playable at 60 rendered FPS; changing render pacing does not change movement, collision, or timers.
+
+**Closeout evidence:** the project owner reports the room is working well and approves closure. `tests/gameplay/test_phase2.gd` passes at 60 and 120 fixed render FPS with 60 Hz physics, covering damage, hurt recovery, pickup timing, ring scatter/bounce/expiry, and death/checkpoint reset. These checks are not a full movement trace comparison or a performance benchmark.
+
+**Accepted follow-ups:** exact tile sensors/fixed-point behavior, matched-input ROM traces, shared ring expiry, and full checkpoint/world-state fidelity remain tracked in [the ROM audit](PHASE_2_ROM_AUDIT.md). Prototype closure does not claim exact ROM parity.
 
 ### Stage 3 — Native 32:9 camera and display foundation
 

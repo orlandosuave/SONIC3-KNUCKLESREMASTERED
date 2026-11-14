@@ -103,6 +103,10 @@ func _build_ui() -> void:
 	preview_button.text = "Open decoder preview"
 	preview_button.pressed.connect(_open_decoder_preview)
 	actions.add_child(preview_button)
+	var prototype_button := Button.new()
+	prototype_button.text = "Play movement prototype"
+	prototype_button.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/movement_prototype.tscn"))
+	actions.add_child(prototype_button)
 	var import_actions := HBoxContainer.new()
 	content.add_child(import_actions)
 	_texture_button = Button.new()
