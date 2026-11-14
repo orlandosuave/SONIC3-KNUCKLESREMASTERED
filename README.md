@@ -8,6 +8,7 @@ This repository currently contains the project scope and a minimal Godot starter
 
 - [Project scope](docs/PROJECT_SCOPE.md) — goals, release boundaries, acceptance criteria, and open decisions
 - [Roadmap and stage tracker](docs/ROADMAP.md) — stage statuses, dependencies, checklists, and exit criteria
+- [Phase 1 plan](docs/PHASE_1_PLAN.md) — ROM intake, decoding proof set, local cache, and detailed acceptance checks
 - [Reference analysis](docs/REFERENCE_ANALYSIS.md) — SMB1R's user-ROM pipeline, Sonic 3 A.I.R.'s release lessons, and the proposed Sonic architecture
 - [ROM intake profile](docs/ROM_IMPORT_SPEC.md) — inspected candidate image metadata and the initial local-only intake contract
 

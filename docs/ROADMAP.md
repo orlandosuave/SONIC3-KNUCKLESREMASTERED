@@ -34,17 +34,21 @@ This file is the stage-level source of truth for the project. It lives in the Gi
 
 ### Stage 1 — Compatible ROM intake and data feasibility spike · In progress
 
-**Goal:** prove a compatible user-supplied combined S3&K ROM can be identified and converted into local data for our own Godot runtime.
+**Goal:** establish a repeatable pipeline that reads a user-provided Sonic 3 & Knuckles ROM and turns the game data needed by our remaster into local resources for the Godot runtime. This phase proves a small end-to-end slice; it does not decode the entire campaign.
 
-- [x] Document the first exact candidate image's container, internal layout, region fields, size, and SHA-256 fingerprint.
-- [x] Add a reusable intake inspector for raw `.md` and single-image `.zip` inputs, with precise validation errors.
-- [ ] Connect the inspector to a file picker and drag/drop intake UI.
-- [x] Read the supplied file without changing it; keep ROM and generated data outside the Git checkout.
-- [ ] Build a versioned local cache manifest with source hash and importer version.
-- [ ] Decode a proof set: one player sprite/animation set, one tileset/palette set, and one compact level layout.
-- [ ] Confirm gameplay is implemented by our runtime and the ROM is not executed as an emulator.
+The ROM is the source for the original game's visual and level data. The project will build its own runtime and gameplay systems around imported data; it will not run the ROM as an emulator. ROM bytes and generated content remain on the user's machine.
 
-**Exit criteria:** one known supported ROM imports repeatedly; unsupported/corrupt test inputs are rejected; the generated local data loads in a Godot test scene; no ROM/cache data appears in Git status.
+Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.md). Summary:
+
+- [x] **1A — Identify the first input profile:** document the supplied image's container, internal layout, region fields, size, and SHA-256 fingerprint.
+- [x] **1B — Implement an intake inspector:** reusable validation for raw `.md` and single-image `.zip` inputs, with specific errors.
+- [ ] **1C — Add the intake experience:** file picker, drag/drop, clear compatibility results, and safe local storage location.
+- [ ] **1D — Map the ROM data:** identify the source structures and decoding steps for a small visual and level-data proof set.
+- [ ] **1E — Decode and load the proof set:** player sprite/animation, zone graphics/palette, and a compact level layout shown in Godot.
+- [ ] **1F — Make local imports repeatable:** versioned cache manifest, source/output hashes, validation, and safe rebuild behavior.
+- [ ] **1G — Confirm boundaries and handoff:** no ROM execution; imported data feeds our own runtime; document compatibility and known gaps.
+
+**Exit criteria:** the user can select the known input; the importer reports compatibility and creates a local, versioned cache; the cache's player, zone, and level proof data load in Godot; invalid inputs produce understandable errors; repeat imports are deterministic; the ROM/cache stay out of the Git checkout; the format notes are sufficient to plan campaign-scale extraction.
 
 **Input provided:** the project owner supplied a combined image privately for local analysis. Never commit or attach ROM/generated game data.
 
