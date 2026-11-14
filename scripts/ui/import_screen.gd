@@ -232,6 +232,10 @@ func _build_aiz_texture_proof() -> void:
 
 func _show_error(message: String) -> void:
 	_last_result = {"ok": false, "error": message}
+	_texture_button.disabled = true
+	_texture_preview.texture = null
+	_texture_preview.visible = false
+	_texture_status.visible = false
 	_result_label.text = message
 	_result_label.modulate = Color("ff9c94")
 

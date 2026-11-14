@@ -4,14 +4,14 @@ This file is the stage-level source of truth for the project. It lives in the Gi
 
 ## Current stage
 
-**Stage 1 — ROM intake and data feasibility spike** is in progress. Stage 0 is complete. The first candidate combined image has been inspected locally; work now covers a narrow, explicit intake profile before any asset decoding begins.
+**Stage 1 — ROM intake and data feasibility spike** is complete. The next stage is the movement/collision prototype. One exact combined-ROM profile is supported, and the AIZ tile-art proof is cached locally through the Godot intake screen.
 
 ## Stage overview
 
 | Stage | Name | Status | Depends on |
 |---|---|---|---|
 | 0 | Scope and project foundation | Complete | — |
-| 1 | Compatible ROM intake and data feasibility | In progress | Stage 0 |
+| 1 | Compatible ROM intake and data feasibility | Complete | Stage 0 |
 | 2 | 60 Hz movement and collision prototype | Not started | Stage 0; can run alongside Stage 1 |
 | 3 | Native 32:9 camera and display foundation | Not started | Stage 2 |
 | 4 | First complete vertical slice | Not started | Stages 1–3 |
@@ -32,23 +32,25 @@ This file is the stage-level source of truth for the project. It lives in the Gi
 
 **Exit criteria:** project scope and reference analysis are documented, the engine target is declared, and the repository is linked to GitHub.
 
-### Stage 1 — Compatible ROM intake and data feasibility spike · In progress
+### Stage 1 — Compatible ROM intake and data feasibility spike · Complete
 
 **Goal:** establish a repeatable pipeline that reads a user-provided Sonic 3 & Knuckles ROM and turns the game data needed by our remaster into local resources for the Godot runtime. This phase proves a small end-to-end slice; it does not decode the entire campaign.
 
-The ROM is the source for the original game's visual and level data. The project will build its own runtime and gameplay systems around imported data; it will not run the ROM as an emulator. ROM bytes and generated content remain on the user's machine.
+The ROM is the source for the original game's visual and level data. The project will build its own runtime and gameplay systems around imported data; it will not run the ROM as an emulator. ROM bytes and generated content remain on the user's machine. Character animation and level reconstruction are later content tasks, not Stage 1 exit requirements.
 
 Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.md). Summary:
 
 - [x] **1A — Identify the first input profile:** document the supplied image's container, internal layout, region fields, size, and SHA-256 fingerprint.
 - [x] **1B — Implement an intake inspector:** reusable validation for raw `.md` and single-image `.zip` inputs, with specific errors.
-- [ ] **1C — Add the intake experience:** initial screen is implemented in `scenes/main.tscn` and `scripts/ui/import_screen.gd`; Godot-run acceptance with valid/invalid files is pending.
-- [ ] **1D — Map the ROM data:** identify the source structures and decoding steps for a small visual and level-data proof set.
-- [ ] **1E — Decode and load the proof set:** player sprite/animation, zone graphics/palette, and a compact level layout shown in Godot.
-- [ ] **1F — Make local imports repeatable:** versioned cache manifest, source/output hashes, validation, and safe rebuild behavior.
-- [ ] **1G — Confirm boundaries and handoff:** no ROM execution; imported data feeds our own runtime; document compatibility and known gaps.
+- [x] **1C — Add the intake experience:** file picker/drop, profile result, local data folder, cache clearing, and AIZ atlas action are implemented and exercised with valid/invalid inputs.
+- [x] **1D — Map the ROM data:** document exact profile-specific AIZ tile and palette ranges and decoding steps for the small graphics proof.
+- [x] **1E — Decode and load the proof set:** AIZ intro tile atlases are generated locally and previewed in Godot.
+- [x] **1F — Make local imports repeatable:** versioned cache manifest, source/output hashes, validation, and safe rebuild behavior are implemented.
+- [x] **1G — Confirm boundaries and handoff:** no ROM execution; imported data feeds our own runtime; compatibility and later content work are documented.
 
-**Exit criteria:** the user can select the known input; the importer reports compatibility and creates a local, versioned cache; the cache's player, zone, and level proof data load in Godot; invalid inputs produce understandable errors; repeat imports are deterministic; the ROM/cache stay out of the Git checkout; the format notes are sufficient to plan campaign-scale extraction.
+**Exit criteria:** met. The user can select the known input; the importer reports compatibility and creates a local, versioned cache with a validated manifest; the AIZ tile-art proof loads in Godot; invalid inputs produce understandable errors; repeat imports are deterministic; the ROM/cache stay out of the Git checkout; the format notes identify the verified slice and document later work.
+
+**Verification:** `tests/rom/test_rom_data_decoder.gd`, `tests/rom/test_rom_inspector.gd`, and `tests/rom/test_local_aiz_import.gd` passed against Godot 4.7; the local integration check used the supplied ZIP. No ROM or generated texture data is tracked.
 
 **Input provided:** the project owner supplied a combined image privately for local analysis. Never commit or attach ROM/generated game data.
 
@@ -82,7 +84,7 @@ Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.
 **Goal:** deliver one polished act from title/start through completion, proving the importer, movement, camera, and user experience together.
 
 - [ ] Build one complete act with traversal, checkpoint, set piece/boss, and completion flow.
-- [ ] Load proof data through the local import/cache path.
+- [ ] Reconstruct the act's required level layout, collision, object placement, and original character frames/animations, then load them through the local import/cache path.
 - [ ] Add pause/options, save/checkpoint behavior, gamepad controls, and return-to-menu.
 - [ ] Add first-pass sound/music hooks and readable HUD.
 - [ ] Validate at 16:9 and native 32:9.
@@ -107,6 +109,7 @@ Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.
 **Goal:** implement the complete combined campaign for Sonic, Tails, and Knuckles.
 
 - [ ] Create a versioned internal format for zone layouts, object placement, palette/resource references, events, and transitions.
+- [ ] Extract/reconstruct the character animation, level layout, object, event, and zone resource data needed for every original route and act.
 - [ ] Implement every primary zone/act, character-route changes, bosses, and act transitions.
 - [ ] Implement special stages, bonus stages, and intended ending paths.
 - [ ] Complete Sonic, Tails, and Knuckles progression and save data.

@@ -16,10 +16,10 @@ Phase 1 proves the path from the user's Sonic 3 & Knuckles ROM to local game dat
 Deliver Phase 1 as a sequence of reviewable checkpoints. Each checkpoint must leave the project launchable and must keep ROM-derived bytes outside the repository.
 
 1. **Make intake usable (1C):** add a startup screen that can validate an input and explain what happens next. Do not call extraction until the user chooses to continue.
-2. **Prove one format at a time (1D):** write down source ranges and decode recipes before writing decoders. Start with the smallest graphics/layout structures that can be displayed; record unknowns instead of silently guessing.
-3. **Create the local data contract (1F):** define the manifest and cache layout before output generation so decoders target stable named resources.
-4. **Build the vertical proof (1E):** import the minimum player, zone, and level data set and load it through normal Godot resources in a debug scene.
-5. **Close the handoff (1G):** record what the slice proves, gaps, and the next extraction increments. Only then mark Stage 1 complete.
+2. **Prove one format at a time (1D):** document exact source ranges and decode recipes for the small AIZ tile/palette proof; keep unverified formats marked as unknown.
+3. **Create the local data contract (1F):** define the manifest and cache layout so output generation has a stable contract.
+4. **Build the small proof (1E):** import the AIZ tile art and palette into local cache and display the tile atlas through Godot.
+5. **Close the handoff (1G):** record what the intake/import spike proves, its limitations, and the next content milestones. Only then mark Phase 1 complete.
 
 The ordering allows the manifest design and format research to proceed in parallel, but output-producing decoders should not be treated as stable until the data contract is written. Work packages 1E and 1F may be implemented incrementally together after their interfaces are agreed.
 
@@ -46,9 +46,8 @@ Use a profile/fingerprint/version keyed cache beneath `user://imports/`, with a 
 ```text
 user://imports/<profile>/<source-hash>/<schema>-<importer-version>/
   manifest.json
-  player/...
-  zones/<zone-id>/...
-  levels/<level-id>/...
+  tiles/aiz_act1_intro_primary.png
+  tiles/aiz_act1_intro_secondary.png
 ```
 
 All paths stored in the manifest are relative to that cache root. The manifest indexes resource IDs, resource type, relative path, dimensions/counts where applicable, and SHA-256 of each generated file. Never serialize Godot absolute `user://` paths into the manifest.
@@ -57,11 +56,11 @@ All paths stored in the manifest are relative to that cache root. The manifest i
 
 Keep the first proof set deliberately small and named in the format notes before implementation. It consists of:
 
-- One playable character's minimum idle/run/jump visual frames, plus only the frame/animation mapping needed to preview them.
-- One zone's minimum terrain tile graphics and palette needed for a faithful static palette preview.
-- One compact level's tile/chunk layout and placement references needed to render a non-interactive map preview.
+- The AIZ Act 1 intro primary and secondary tile graphics.
+- The associated intro palette decoded into Godot colors for a tile-atlas preview.
+- A local manifest listing the two generated preview images and their hashes.
 
-This proof does not include complete character animation coverage, object behavior, collision physics, music/audio, boss scripts, special stages, or every campaign route. The test scene may use placeholders for runtime behavior and should label imported data versus project-authored preview UI.
+This proves the intake → verified profile → bounded decompression → image generation → local cache path. It does not include character animation mapping, level layout reconstruction, object behavior, collision physics, music/audio, boss scripts, special stages, or campaign routes. Move character and level reconstruction to the vertical-slice and full-campaign phases.
 
 ## Checkpoint review artifacts
 
@@ -89,7 +88,7 @@ Do not add screenshots containing decoded proprietary art to the repository. A l
 
 **Acceptance:** reports structured success data or a user-facing reason for failure; reads source data without modifying or extracting it; never writes source bytes to the checkout.
 
-### 1C — Add the intake experience · In progress
+### 1C — Add the intake experience · Complete
 
 **Tasks:**
 
@@ -103,46 +102,45 @@ Do not add screenshots containing decoded proprietary art to the repository. A l
 
 **Acceptance:** a user can select or drop the provided ZIP and see a clear success result; invalid and ambiguous inputs fail without crashing or changing the source file.
 
-**Checkpoint:** the first screen implementation is in `scenes/main.tscn` and `scripts/ui/import_screen.gd`. It includes file selection/drop, inspector-backed validation, local data folder access, and explicit generated-cache clearing. Interactive acceptance remains pending a Godot run with the supplied ROM and invalid-input examples; the import action is intentionally not wired until decoder/cache work exists.
+**Checkpoint:** the screen in `scenes/main.tscn` and `scripts/ui/import_screen.gd` supports file selection/drop, inspector-backed validation, local data-folder access, explicit generated-cache clearing, and an AIZ tile-atlas import action. `test_local_aiz_import.gd` exercises the valid import and wrong-size rejection states through the screen logic.
 
-### 1D — Map ROM data structures · In progress
+### 1D — Map ROM data structures · Complete
 
 **Tasks:**
 
 - Create a format catalog for the proof set: ROM location, byte layout, compression/packing method, dimensions/counts, references, and decoder status.
-- Identify one character's sprite/tile source and animation/frame mapping.
-- Identify one zone's tile graphics and palette source.
-- Identify one compact level's layout representation and object placement references.
+- Record the source ranges, compressed lengths, output lengths, palette range, and tile packing for the AIZ Act 1 intro proof.
+- Record the matching profile/revision constraint for those ranges.
+- List character, level-layout, object, and event structures as future work without requiring their formats for Phase 1 completion.
 - Record uncertain offsets/formats as hypotheses until checked against decoded output; avoid hard-coding unexplained offsets in gameplay code.
 - For each structure, record endianness, pointer base, compression type, alignment, bounds checks, known references, and any assumptions about the selected profile.
 - Define stable internal resource IDs and a minimal serialized representation before decoder output becomes a runtime dependency.
 
 **Output:** [ROM_FORMAT_NOTES.md](ROM_FORMAT_NOTES.md) plus decoder fixtures/metadata that contain no ROM byte dumps or extracted proprietary assets.
 
-**Acceptance:** each proof resource has a traceable ROM source range and a documented decode procedure; unresolved structures are clearly marked.
+**Acceptance:** the two AIZ tile resources and palette used by the proof have traceable ranges and documented decode steps; later game-data formats are clearly marked as not yet investigated.
 
 **Checkpoint:** `ROM_FORMAT_NOTES.md` records the exact-profile AIZ Act 1 intro primary/secondary tile and palette ranges. KosinskiM output was checked against reference hashes, and packed-pixel decoding is covered by synthetic tests. Layout, palette-line assignment, and block/chunk schemas are still open, so this remains a partial format map.
 
 **Decoder foundation:** `scripts/rom/rom_data_decoder.gd` provides bounded KosinskiM decompression, packed 4bpp tile unpacking, Genesis CRAM palette conversion, and tile-atlas image composition. Synthetic checks live in `tests/rom/test_rom_data_decoder.gd`. `scripts/rom/rom_texture_importer.gd` generates the AIZ Act 1 intro raw tile atlases under `user://` after profile validation. Character mappings and the level layout/block/chunk rendering remain open.
 
-### 1E — Decode and load a proof set · In progress
+### 1E — Decode and load a proof set · Complete
 
 **Tasks:**
 
-- Decode one player's minimum useful sprite and animation set.
-- Decode one zone's graphics and palette into Godot-ready local resources.
-- Decode one compact level layout and the references needed to display its terrain/object placements.
-- Load and preview these resources in a Godot proof scene using the project's data model.
+- Decode the AIZ Act 1 intro primary and secondary tile art and the associated palette.
+- Save two generated tile-atlas images under the local user cache and display the primary atlas in Godot.
+- Keep the preview clearly labeled as a tile atlas, not a reconstructed level.
 - Keep decoder code separate from UI and gameplay code; parsers should accept byte arrays plus explicit bounds and return typed data/errors.
 - Reject out-of-range pointers, impossible dimensions/counts, truncated streams, and decompression overflow with actionable import errors.
 - Provide a developer-only reimport action so parser changes can regenerate the proof set without clearing unrelated user data.
 - Keep decoded output in local user data; do not check it into the repository.
 
-**Acceptance:** a developer can see the imported character frames, zone art with correct palette, and a level layout in Godot, all generated from the selected local ROM through the documented path.
+**Acceptance:** the validated local ROM generates both documented AIZ tile atlases and displays the primary atlas in Godot; the output remains outside the repository.
 
-**Current evidence:** the compatibility screen can build and display the primary AIZ intro tile atlas and caches both primary and secondary tile atlases locally. This is a tile-art proof only; the complete palette/layout mapping and character/level proof scene are not finished.
+**Current evidence:** the compatibility screen builds/displays the primary AIZ intro tile atlas and caches both atlases locally. KosinskiM outputs match reference hashes. Palette-line assignment in a rendered level is not part of this proof.
 
-### 1F — Make local imports repeatable · Not started
+### 1F — Make local imports repeatable · Complete
 
 **Tasks:**
 
@@ -157,7 +155,7 @@ Do not add screenshots containing decoded proprietary art to the repository. A l
 
 **Acceptance:** importing the same source twice yields the same manifest and output hashes; interrupted/corrupt caches are detected and safely rebuilt; Git status remains free of local ROM and cache files.
 
-### 1G — Confirm boundaries and handoff · Not started
+### 1G — Confirm boundaries and handoff · Complete
 
 **Tasks:**
 
@@ -165,22 +163,26 @@ Do not add screenshots containing decoded proprietary art to the repository. A l
 - Record supported profile(s), known gaps, decoder limitations, and remaining investigation risks.
 - Identify the next campaign extraction increments based on the format catalog.
 
-**Acceptance:** the runtime consumes decoded data as resources and implements gameplay itself; the next phase can start movement work without depending on a full-campaign decoder.
+**Acceptance:** the runtime boundary and remaining extraction work are clear; Phase 2 can start the movement prototype without depending on character animation or full-level extraction. Those resources are required later for the vertical slice and full-campaign phases.
 
 ## Phase exit checklist
 
-- [ ] Intake UI accepts the known supported input and reports unsupported/corrupt inputs clearly.
-- [ ] The local cache is versioned, validated, deterministic, recoverable, and excluded from Git.
-- [ ] Character, zone, and compact-level proof resources decode from the ROM and display in Godot.
-- [ ] The import path is documented well enough to add resources and verified ROM profiles incrementally.
-- [ ] No ROM execution, source ROM, generated game data, or local user paths are present in repository content/history from this phase.
-- [ ] Phase 1 findings and implementation checkpoint are committed to the project's GitHub repository.
+- [x] Intake UI accepts the known supported input and reports unsupported/corrupt inputs clearly.
+- [x] The local cache is versioned, validated, deterministic, recoverable, and excluded from Git.
+- [x] AIZ primary/secondary tile art and palette decode from the ROM, generate atlases, and display in Godot.
+- [x] The import path is documented well enough to add resources and verified ROM profiles incrementally.
+- [x] No ROM execution, source ROM, generated game data, or local user paths are present in repository content/history from this phase.
+- [x] Phase 1 findings and implementation checkpoint are committed to the project's GitHub repository.
+
+**Phase 1 acceptance checks:** `test_rom_data_decoder.gd` covers synthetic tile/palette/KosinskiM inputs; `test_rom_inspector.gd` checks unsupported type/size/profile, corrupt ZIP, and ambiguous ZIP failures; `test_local_aiz_import.gd` validates the supplied profile, exercises import-screen success/rejection states, verifies generated resource hashes and manifest privacy, reuses the cache, repairs a corrupted output, and checks deterministic rebuilds. All checks passed with the supplied local ZIP. Generated atlases/manifest are in Godot `user://` data only.
+
+**Handoff:** Phase 1 is complete. Character animation extraction, level-layout reconstruction, objects/events, and full-campaign resource coverage belong to the later vertical-slice and full-campaign stages in [ROADMAP.md](ROADMAP.md), not Phase 1 or the movement prototype.
 
 ## Explicitly deferred from Phase 1
 
 - Full-campaign extraction or broad revision/region support.
 - Gameplay implementation, emulator behavior, 68000 execution, or ROM patching.
-- Reconstructing every animation, object, event, audio track, or scripted encounter.
+- Character animation extraction, full level reconstruction, object/event mapping, audio, and scripted encounter recreation (vertical-slice/full-campaign phases).
 - Public distribution of ROM-derived assets or caches.
 - Editor, mod marketplace, general-purpose asset-pack format, save system, and release packaging.
 

@@ -47,7 +47,7 @@ The ranges below were found by matching each complete public disassembly resourc
 
 The two tile output hashes match output from the public KENSSharp KosinskiM reference decoder when run over the matched reference resources. The implementation has bounded source reads, a declared-output-size limit, a module limit, a command limit, and rejects invalid back-references or output-size mismatches. No compressed or decompressed ROM bytes are checked in.
 
-Genesis tile pixels use packed nibbles: each byte stores the left pixel in its high nibble and the right pixel in its low nibble. The local proof writes `aiz_act1_intro_primary.png` and `aiz_act1_intro_secondary.png` under `user://imports/sk-s3-lockon-4m-sha256-fba0677f/`; these are generated user data and remain outside the repository. The current preview is a raw tile atlas, not a reconstructed level scene.
+Genesis tile pixels use packed nibbles: each byte stores the left pixel in its high nibble and the right pixel in its low nibble. The local proof writes `tiles/aiz_act1_intro_primary.png` and `tiles/aiz_act1_intro_secondary.png` under `user://imports/<profile>/<source-hash>/1-1/`; the deterministic manifest lists each file's dimensions, tile count, decoded byte count, and SHA-256. These generated files remain outside the repository. The current preview is a raw tile atlas, not a reconstructed level scene.
 
 ## Proposed decode chain
 
