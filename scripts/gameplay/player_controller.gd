@@ -146,7 +146,9 @@ func _physics_process(delta: float) -> void:
 	if grounded and not spindash_released:
 		ground_angle = _read_ground_angle()
 		var tangent := Vector2(cos(ground_angle), sin(ground_angle))
-		ground_speed = velocity.dot(tangent)
+		# Keep ROM ground_vel independent of Godot's post-slide velocity.
+		# Downhill slide resolution can remove Y; projecting it back every
+		# frame repeatedly loses slope momentum.
 		ground_speed = _apply_rom_slope_force(ground_speed, ground_angle, rolling, delta)
 		var slope_locked := slope_move_lock > 0
 		if rolling:
@@ -159,7 +161,8 @@ func _physics_process(delta: float) -> void:
 		elif direction != 0.0 and not slope_locked:
 			var desired := direction * MAX_SPEED
 			if ground_speed == 0.0 or signf(ground_speed) == signf(desired):
-				ground_speed = move_toward(ground_speed, desired, ACCELERATION * delta)
+				if absf(ground_speed) < MAX_SPEED:
+					ground_speed = move_toward(ground_speed, desired, ACCELERATION * delta)
 			else:
 				ground_speed = move_toward(ground_speed, 0.0, BRAKE * delta)
 		else:
@@ -217,7 +220,10 @@ func _physics_process(delta: float) -> void:
 		airborne = false
 		roll_jumping = false
 		ground_angle = _angle_from_support(support.normal)
-		ground_speed = velocity.dot(Vector2(cos(ground_angle), sin(ground_angle)))
+		var floor_tangent := Vector2(cos(ground_angle), sin(ground_angle))
+		if not grounded:
+			ground_speed = velocity.dot(floor_tangent)
+		velocity = floor_tangent * ground_speed
 		_apply_slope_repel(delta)
 	else:
 		airborne = true

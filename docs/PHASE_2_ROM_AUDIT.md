@@ -29,3 +29,7 @@ Reference: local `local_reference/skdisasm/sonic3k.asm` and its sine table. This
 - Underwater, shields, transformations, other characters, moving platforms, loops, and original animation/audio remain outside this normal-Sonic test-room slice.
 
 Phase 2 prototype scope closed on 2026-11-14 following the project owner’s successful playtest and explicit approval. Exact ROM fidelity remains the target for follow-up work; the gaps above remain open and are not certified by prototype closure.
+
+## Post-closeout slope correction
+
+Walking slope regression reproduced unwanted downhill speed loss (180 px/s to about34 px/s while holding forward). The controller now retains scalar ground speed independently of Godot's post-slide velocity and preserves downhill momentum above normal running speed, following `ground_vel` and the input-speed checks in `Sonic_Move`. Uphill slope resistance is retained. `tests/gameplay/test_walking_slopes.gd` checks walking uphill/downhill in both directions on 0.4-grade terrain; it passes at 60 and 120 fixed render FPS with matching results. Existing Phase2 gameplay regressions also pass. This corrects artificial speed loss without claiming full ROM collision parity.
