@@ -4,14 +4,14 @@ This file is the stage-level source of truth for the project. It lives in the Gi
 
 ## Current stage
 
-**Stage 1 — ROM intake and data feasibility spike** is next. Stage 0 is complete. No calendar estimates are set until the ROM feasibility spike establishes the pipeline's actual complexity.
+**Stage 1 — ROM intake and data feasibility spike** is in progress. Stage 0 is complete. The first candidate combined image has been inspected locally; work now covers a narrow, explicit intake profile before any asset decoding begins.
 
 ## Stage overview
 
 | Stage | Name | Status | Depends on |
 |---|---|---|---|
 | 0 | Scope and project foundation | Complete | — |
-| 1 | Compatible ROM intake and data feasibility | Next | Stage 0 |
+| 1 | Compatible ROM intake and data feasibility | In progress | Stage 0 |
 | 2 | 60 Hz movement and collision prototype | Not started | Stage 0; can run alongside Stage 1 |
 | 3 | Native 32:9 camera and display foundation | Not started | Stage 2 |
 | 4 | First complete vertical slice | Not started | Stages 1–3 |
@@ -32,20 +32,21 @@ This file is the stage-level source of truth for the project. It lives in the Gi
 
 **Exit criteria:** project scope and reference analysis are documented, the engine target is declared, and the repository is linked to GitHub.
 
-### Stage 1 — Compatible ROM intake and data feasibility spike · Next
+### Stage 1 — Compatible ROM intake and data feasibility spike · In progress
 
 **Goal:** prove a compatible user-supplied combined S3&K ROM can be identified and converted into local data for our own Godot runtime.
 
-- [ ] Document one exact initial ROM format, region, revision, file size, and checksum.
-- [ ] Add file picker and drag/drop intake with useful errors for unsupported or corrupt files.
-- [ ] Read the supplied file without changing it; keep ROM and generated data outside the Git checkout.
+- [x] Document the first exact candidate image's container, internal layout, region fields, size, and SHA-256 fingerprint.
+- [x] Add a reusable intake inspector for raw `.md` and single-image `.zip` inputs, with precise validation errors.
+- [ ] Connect the inspector to a file picker and drag/drop intake UI.
+- [x] Read the supplied file without changing it; keep ROM and generated data outside the Git checkout.
 - [ ] Build a versioned local cache manifest with source hash and importer version.
 - [ ] Decode a proof set: one player sprite/animation set, one tileset/palette set, and one compact level layout.
 - [ ] Confirm gameplay is implemented by our runtime and the ROM is not executed as an emulator.
 
 **Exit criteria:** one known supported ROM imports repeatedly; unsupported/corrupt test inputs are rejected; the generated local data loads in a Godot test scene; no ROM/cache data appears in Git status.
 
-**Input needed later:** the project owner supplies a compatible ROM privately for local verification. Never commit or attach ROM/generated game data.
+**Input provided:** the project owner supplied a combined image privately for local analysis. Never commit or attach ROM/generated game data.
 
 ### Stage 2 — 60 Hz movement and collision prototype
 
