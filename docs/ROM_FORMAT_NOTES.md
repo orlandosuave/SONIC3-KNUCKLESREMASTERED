@@ -31,6 +31,8 @@ The first concrete level candidate is **Angel Island Zone Act 1**, starting with
 | `player.sonic` | Disassembly tree places player data in `General/Sprites`; SonLVL configuration references Sonic palette | Art, mappings, animation tables, and palette are separate candidate structures | Low: choose a minimal idle/run/jump subset, then trace mapping/frame tables and art sources to exact profile offsets |
 | `objects.aiz.act1.intro` | `SonLVL - S3.ini`: `Levels/AIZ/Object Pos/1-S3.bin` | Object placement records | Low: not required for the first static terrain preview; record format and references before using |
 
+The repository's SonLVL diagnostic log for loading AIZ Act 1 reports the layout as **uncompressed**, the tile files as **KosinskiM**, and the block/chunk files as **Kosinski**. This is enough to refine the decoder shortlist, but not enough to implement safely: it does not establish the stream bounds, output sizes, or the accepted image's component-local/combined-ROM offsets. The intro and main layout both point to `Layout/1.bin`; the intro uses `Intro.bin` palette data and intro tile sets, while the main area uses the main-level tile sets and palette. Treat them as distinct preview configurations over shared layout data, not as an assumption that the whole act has one tileset.
+
 These filenames come from the research project's source tree, not from a ROM extraction. They are useful labels and lead-ins for investigation, not a substitute for verifying address tables against the accepted profile.
 
 ## Proposed decode chain
@@ -64,6 +66,7 @@ For each structure, add a row or subsection with:
 - [Sonic & Knuckles disassembly README](https://github.com/sonicretro/skdisasm) describes the `General`, `Levels`, and `Lockon S3` organization, KosinskiM use for realtime art, and the level drawing system.
 - [SonLVL - S3.ini](https://github.com/sonicretro/skdisasm/blob/master/SonLVL%20INI%20Files/SonLVL%20-%20S3.ini) names AIZ Act 1 intro/main tiles, blocks, chunks, layout, palette, objects, and start-position assets.
 - [SonPLN.ini](https://github.com/sonicretro/skdisasm/blob/master/SonLVL%20INI%20Files/SonPLN.ini) demonstrates that tile art, mapping data, palette data, dimensions, and compression labels are separate inputs in the research tooling.
+- [SonLVL AIZ load diagnostic](https://github.com/sonicretro/SonLVL/issues/137) shows the tool's detected encodings for AIZ Act 1: KosinskiM tiles, Kosinski blocks/chunks, and uncompressed layout.
 
 These references support the structure inventory and dependency chain. They do not provide a verified byte-offset table for the accepted user ROM in this project, and no disassembly code or extracted assets are imported into the game.
 
