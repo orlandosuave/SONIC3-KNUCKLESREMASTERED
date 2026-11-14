@@ -105,7 +105,7 @@ Do not add screenshots containing decoded proprietary art to the repository. A l
 
 **Checkpoint:** the first screen implementation is in `scenes/main.tscn` and `scripts/ui/import_screen.gd`. It includes file selection/drop, inspector-backed validation, local data folder access, and explicit generated-cache clearing. Interactive acceptance remains pending a Godot run with the supplied ROM and invalid-input examples; the import action is intentionally not wired until decoder/cache work exists.
 
-### 1D — Map ROM data structures · Not started
+### 1D — Map ROM data structures · In progress
 
 **Tasks:**
 
@@ -117,9 +117,11 @@ Do not add screenshots containing decoded proprietary art to the repository. A l
 - For each structure, record endianness, pointer base, compression type, alignment, bounds checks, known references, and any assumptions about the selected profile.
 - Define stable internal resource IDs and a minimal serialized representation before decoder output becomes a runtime dependency.
 
-**Output:** a short `docs/ROM_FORMAT_NOTES.md` plus decoder fixtures/metadata that contain no ROM byte dumps or extracted proprietary assets.
+**Output:** [ROM_FORMAT_NOTES.md](ROM_FORMAT_NOTES.md) plus decoder fixtures/metadata that contain no ROM byte dumps or extracted proprietary assets.
 
 **Acceptance:** each proof resource has a traceable ROM source range and a documented decode procedure; unresolved structures are clearly marked.
+
+**Checkpoint:** `ROM_FORMAT_NOTES.md` now records a research-based AIZ Act 1 intro proof candidate and the player/zone/layout decode dependencies. This is an inventory, not a completed format map: exact profile offsets and several record schemas remain unverified. The next increment is source-tracing those structures to byte ranges before decoder implementation.
 
 ### 1E — Decode and load a proof set · Not started
 
