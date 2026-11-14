@@ -79,13 +79,16 @@ An online level browser, online accounts, and automatic cloud distribution are n
 
 ## 5. 32:9 display requirements
 
+- Use the user's panoramic Sonic wallpaper screenshot as a composition/detail reference: richly layered scenery, fine visible terrain detail, and a continuous playable world filling the very wide display. The screenshot is a visual reference, not source art and not a pixel-for-pixel target.
+- Keep pixel-art edges and sprite proportions crisp at super-ultrawide resolutions; choose internal render scaling and texture filtering so added detail does not become blur or distortion.
+- Make the extra width reveal more authored level space. Do not stretch a 16:9 image or obtain width by cutting away essential vertical play space.
 - Maintain correct sprite proportions at every supported aspect ratio; do not stretch the game image.
 - Keep movement physics independent of display resolution and aspect ratio.
 - Use the wider view to show more level space only where this preserves encounter fairness. Allow the camera to be bounded for tightly staged sections.
 - Keep essential HUD elements in a configurable safe region. Optional information may use the extra side space.
 - Ensure menus remain usable at 16:9, 21:9, and 32:9.
 - Include 32:9 test scenes for hazards, bosses, transitions, and level boundaries so content does not rely on a fixed screen width.
-- Treat 5120×1440 as a reference 32:9 mode, while supporting other 32:9 resolutions through aspect-aware rendering.
+- Treat 5120×1440 as the exact reference 32:9 test mode, while supporting other 32:9 resolutions through aspect-aware rendering. The supplied screenshot measures 5115×1384 (about 3.70:1), so it guides visual composition but does not replace the 32:9 test target.
 - Treat 60 FPS as the normal-speed reference for game simulation. VSync/frame pacing can display at 60; higher refresh displays may use interpolation without changing simulation speed.
 - Verify gameplay geometry and enemy/boss cues at 32:9. Extra visibility must not let the player trigger encounter logic prematurely or make hazards unfairly visible only at the last moment.
 

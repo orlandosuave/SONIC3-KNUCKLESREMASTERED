@@ -66,9 +66,9 @@ Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.
 
 ### Stage 3 — Native 32:9 camera and display foundation
 
-**Goal:** make 32:9 an actual expanded gameplay view while preserving pixel proportions and encounter fairness.
+**Goal:** make 32:9 an actual expanded gameplay view with the user's panoramic screenshot as a detail/composition reference, while preserving crisp pixel-art presentation, vertical play space, sprite proportions, and encounter fairness.
 
-- [ ] Define pixel scaling and base framing from 16:9 through 32:9.
+- [ ] Define pixel scaling and base framing from 16:9 through 32:9, calibrated against the 5120×1440 test mode and the supplied panoramic composition reference.
 - [ ] Implement aspect-aware viewport expansion without stretching.
 - [ ] Add camera look-ahead, bounds, and authored clamps for bosses/cutscenes.
 - [ ] Place essential HUD/menu content in configurable safe regions.
