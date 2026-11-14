@@ -123,6 +123,8 @@ Do not add screenshots containing decoded proprietary art to the repository. A l
 
 **Checkpoint:** `ROM_FORMAT_NOTES.md` now records a research-based AIZ Act 1 intro proof candidate and the player/zone/layout decode dependencies. This is an inventory, not a completed format map: exact profile offsets and several record schemas remain unverified. The next increment is source-tracing those structures to byte ranges before decoder implementation.
 
+**Decoder foundation:** `scripts/rom/rom_data_decoder.gd` now provides bounded 4bpp tile unpacking, Genesis CRAM palette conversion, and tile-atlas image composition. Synthetic checks live in `tests/rom/test_rom_data_decoder.gd`. This code handles uncompressed tile/palette buffers only; compressed streams, address resolution, character mappings, and level layout parsing remain open.
+
 ### 1E — Decode and load a proof set · Not started
 
 **Tasks:**
