@@ -95,6 +95,10 @@ func _build_ui() -> void:
 	_inspect_button.disabled = true
 	_inspect_button.pressed.connect(_inspect_selected)
 	actions.add_child(_inspect_button)
+	var preview_button := Button.new()
+	preview_button.text = "Open decoder preview"
+	preview_button.pressed.connect(_open_decoder_preview)
+	actions.add_child(preview_button)
 
 	_result_label = Label.new()
 	_result_label.text = "The selected file is only read for validation. No import or cache is created yet."
@@ -144,6 +148,10 @@ func _build_ui() -> void:
 
 func _open_file_picker() -> void:
 	_file_dialog.popup_centered_ratio(0.72)
+
+
+func _open_decoder_preview() -> void:
+	get_tree().change_scene_to_file("res://scenes/decoder_preview.tscn")
 
 
 func _select_path(path: String) -> void:
