@@ -22,3 +22,10 @@ Next: test in GUI with user-provided ROM loaded via menu; profile render_region 
 - NOT VERIFIED: ROM-backed runtime, actual floor contact/slopes, visual playability, correct collision semantics or 32:9 performance. The standalone scene exits to menu without a loaded ROM.
 - Next: exercise a ROM-backed session, verify floor probe contact and spawn, then tune original physics/camera; avoid merging parallel Codex player-controller edits.
 - Blocker handling documented in docs/phase4_blocker_protocol.md.
+
+## 2026-11-15 player scene wiring
+- Instantiated RomPlayer in ROM-backed terrain explorer; physics tick now applies input and camera follows player world position.
+- Shift+arrows retain manual pan; F toggles follow; screen coordinates map player to scaled viewport.
+- Godot 4.7 headless editor exit 0; traversal smoke PASS; ultrawide geometry 0 failures; Phase 3 camera regression 0 failures.
+- Not yet verified with a loaded ROM or real GUI gameplay; slope/ground correctness still pending.
+

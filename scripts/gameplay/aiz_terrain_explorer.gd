@@ -23,6 +23,9 @@ func _ready() -> void:
     status.position = Vector2(8, 8)
     status.add_theme_color_override("font_color", Color.WHITE)
     add_child(status)
+    sonic = RomPlayer.new()
+    sonic.configure(Session.bundle, Vector2(origin + Vector2i(160, 70)))
+    add_child(sonic)
     get_viewport().size_changed.connect(_on_viewport_resized)
     _on_viewport_resized()
 
@@ -42,6 +45,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
     if event.keycode == KEY_ESCAPE:
         get_tree().change_scene_to_file("res://scenes/main.tscn")
         return
+    if event.keycode == KEY_F:
+        follow_sonic = not follow_sonic
+        return
+    if not event.shift_pressed:
+        return
     var direction := Vector2i.ZERO
     match event.keycode:
         KEY_LEFT, KEY_A: direction.x = -1
@@ -50,11 +58,27 @@ func _unhandled_key_input(event: InputEvent) -> void:
         KEY_DOWN, KEY_S: direction.y = 1
     if direction == Vector2i.ZERO:
         return
+    follow_sonic = false
     var layer: Dictionary = Session.bundle["foreground"]
-    var limit := Vector2i(int(layer["width_chunks"]) * 128, int(layer["height_chunks"]) * 128) - view_size
-    origin = Vector2i(clampi(origin.x + direction.x * SCROLL_STEP, 0, maxi(limit.x, 0)), clampi(origin.y + direction.y * SCROLL_STEP, 0, maxi(limit.y, 0)))
+    var level := Vector2i(int(layer["width_chunks"]) * 128, int(layer["height_chunks"]) * 128)
+    origin = ViewRules.clamp_origin(origin + direction * SCROLL_STEP, view_size, level)
     _render()
 
+func _physics_process(delta: float) -> void:
+    if sonic == null:
+        return
+    var direction := Input.get_axis("ui_left", "ui_right")
+    var jump := Input.is_action_just_pressed("ui_accept")
+    sonic.simulate(delta, direction, jump)
+    if follow_sonic:
+        var layer: Dictionary = Session.bundle["foreground"]
+        var level := Vector2i(int(layer["width_chunks"]) * 128, int(layer["height_chunks"]) * 128)
+        var target := Vector2i(roundi(sonic.world_position.x - view_size.x * 0.5), roundi(sonic.world_position.y - view_size.y * 0.5))
+        var next_origin := ViewRules.clamp_origin(target, view_size, level)
+        if next_origin != origin:
+            origin = next_origin
+            _render()
+    queue_redraw()
 func _render() -> void:
     var region := Rect2i(origin, view_size)
     var fg := Terrain.render_region(Session.bundle, "foreground", region)
@@ -81,3 +105,6 @@ func _draw() -> void:
         draw_texture_rect(background, rect, false)
     if foreground != null:
         draw_texture_rect(foreground, rect, false)
+    if sonic != null:
+        sonic.position = rect.position + (sonic.world_position - Vector2(origin)) * scale_factor
+        sonic.scale = Vector2.ONE * scale_factor
