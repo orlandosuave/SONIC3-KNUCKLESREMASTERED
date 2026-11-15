@@ -3,6 +3,7 @@ extends SceneTree
 const Terrain = preload("res://scripts/rom/rom_terrain_decoder.gd")
 const Decoder = preload("res://scripts/rom/rom_data_decoder.gd")
 const Inspector = preload("res://scripts/rom/rom_inspector.gd")
+const Collision = preload("res://scripts/gameplay/rom_terrain_collision.gd")
 
 
 func _initialize() -> void:
@@ -29,6 +30,30 @@ func _initialize() -> void:
 	layout[9] = 0x87
 	assert(not Terrain.decode_layout(layout)["ok"])
 	assert(not Terrain.decode_aiz_main(PackedByteArray())["ok"])
+	var collision_chunks := PackedByteArray()
+	collision_chunks.resize(128)
+	collision_chunks[0] = 0x10
+	collision_chunks[1] = 1
+	var indexes := PackedByteArray([0, 2])
+	var collision_bundle := {"ok": true, "foreground": {"width_chunks": 1, "height_chunks": 1, "rows": [PackedByteArray([0])]}, "chunks": collision_chunks, "collision_primary": indexes, "collision_secondary": indexes, "angles": PackedByteArray([0, 0]), "heights": PackedByteArray()}
+	var missing_shape := Collision.find_floor(collision_bundle, Vector2i(0, 0))
+	assert(not missing_shape["ok"] and missing_shape["error"] == "Missing collision shape geometry.")
+	var missing_row_bundle := collision_bundle.duplicate(true)
+	missing_row_bundle["foreground"]["rows"] = []
+	var missing_row := Collision.find_floor(missing_row_bundle, Vector2i(0, 0))
+	assert(not missing_row["ok"] and missing_row["error"] == "Missing terrain layout row.")
+	var short_row_bundle := collision_bundle.duplicate(true)
+	short_row_bundle["foreground"]["rows"] = [PackedByteArray()]
+	var short_row := Collision.find_floor(short_row_bundle, Vector2i(0, 0))
+	assert(not short_row["ok"] and short_row["error"] == "Truncated terrain layout row.")
+	var short_index_bundle := collision_bundle.duplicate(true)
+	short_index_bundle["collision_primary"] = PackedByteArray([0])
+	var missing_index := Collision.find_floor(short_index_bundle, Vector2i(0, 0))
+	assert(not missing_index["ok"] and missing_index["error"] == "Missing collision index.")
+	var missing_chunk_bundle := collision_bundle.duplicate(true)
+	missing_chunk_bundle["chunks"] = PackedByteArray()
+	var missing_chunk := Collision.find_floor(missing_chunk_bundle, Vector2i(0, 0))
+	assert(not missing_chunk["ok"] and missing_chunk["error"] == "Missing collision chunk.")
 	var arguments := OS.get_cmdline_user_args()
 	if arguments.size() >= 2:
 		var inspected := Inspector.inspect_file(arguments[0])

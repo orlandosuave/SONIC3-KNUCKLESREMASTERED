@@ -252,9 +252,9 @@ def parse_aiz_collision(data):
 
 def collision_shape_id(paths, path_index, block_id):
     """Look up an S3 split-path collision shape without interpreting solidity."""
-    if path_index not in (0, 1):
+    if type(path_index) is not int or path_index not in (0, 1):
         raise ValueError("Collision path must be 0 or 1")
-    if not isinstance(block_id, int) or not 0 <= block_id < 768:
+    if type(block_id) is not int or not 0 <= block_id < 768:
         raise ValueError("Collision block ID must be in [0, 767]")
     if len(paths) != 2 or any(len(path) != 768 for path in paths):
         raise ValueError("Expected two collision paths with 768 indices each")

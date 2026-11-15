@@ -10,8 +10,15 @@ static func _height(bundle: Dictionary, point: Vector2i, path: int, angle: int) 
 	var layer: Dictionary = bundle["foreground"]
 	if point.x < 0 or point.y < 0 or point.x >= int(layer["width_chunks"]) * 128 or point.y >= int(layer["height_chunks"]) * 128:
 		return {"ok": false, "error": "Probe outside validated layout bounds."}
-	var row: PackedByteArray = layer["rows"][point.y / 128]
-	var chunk_id: int = row[point.x / 128]
+	var rows: Array = layer["rows"]
+	var row_index := point.y / 128
+	var column_index := point.x / 128
+	if row_index >= rows.size():
+		return {"ok": false, "error": "Missing terrain layout row."}
+	var row: PackedByteArray = rows[row_index]
+	if column_index >= row.size():
+		return {"ok": false, "error": "Truncated terrain layout row."}
+	var chunk_id: int = row[column_index]
 	var offset := chunk_id * 128 + ((point.y % 128) / 16 * 8 + (point.x % 128) / 16) * 2
 	var chunks: PackedByteArray = bundle["chunks"]
 	if offset + 2 > chunks.size():
@@ -27,6 +34,8 @@ static func _height(bundle: Dictionary, point: Vector2i, path: int, angle: int) 
 	var shape: int = indexes[block_id]
 	if shape == 0:
 		return result
+	if shape >= bundle["angles"].size() or (shape + 1) * 16 > bundle["heights"].size():
+		return {"ok": false, "error": "Missing collision shape geometry."}
 	var column := point.x & 15
 	angle = int(bundle["angles"][shape])
 	if entry & 1024:

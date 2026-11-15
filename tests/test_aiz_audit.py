@@ -122,6 +122,27 @@ class LayoutAuditTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             audit.unresolved_blocks_in_rect(layer, chunks, 2, (0, 0, 129, 16))
 
+    def test_terrain_coverage_crosses_chunk_boundary_without_overreading(self):
+        layer = {"width_chunks": 2, "height_chunks": 1, "rows": [bytes((0, 1))]}
+        chunks = bytearray(256)
+        # Last block of chunk zero and first block of chunk one.
+        struct.pack_into(">H", chunks, 14, 0x0405)  # X flip; block 5
+        struct.pack_into(">H", chunks, 128, 0x0806)  # Y flip; block 6
+        self.assertEqual(audit.unresolved_blocks_in_rect(layer, chunks, 5, (112, 0, 128, 16)), [5])
+        self.assertEqual(audit.unresolved_blocks_in_rect(layer, chunks, 5, (128, 0, 144, 16)), [6])
+        self.assertEqual(audit.unresolved_blocks_in_rect(layer, chunks, 5, (127, 0, 129, 16)), [5, 6])
+        self.assertEqual(audit.unresolved_blocks_in_rect(layer, chunks, 5, (144, 0, 160, 16)), [])
+
+    def test_terrain_coverage_crosses_vertical_chunk_boundary(self):
+        layer = {"width_chunks": 1, "height_chunks": 2, "rows": [bytes((0,)), bytes((1,))]}
+        chunks = bytearray(256)
+        struct.pack_into(">H", chunks, 112, 9)  # Bottom-left block of first chunk
+        struct.pack_into(">H", chunks, 128, 10)  # Top-left block of second chunk
+        self.assertEqual(audit.unresolved_blocks_in_rect(layer, chunks, 9, (0, 127, 1, 129)), [9, 10])
+        self.assertEqual(audit.unresolved_blocks_in_rect(layer, chunks, 9, (0, 128, 1, 144)), [10])
+        with self.assertRaises(ValueError):
+            audit.unresolved_blocks_in_rect(layer, chunks[:128], 9, (0, 128, 1, 129))
+
     def fixture(self):
         data = bytearray(0x8C)
         struct.pack_into(">4H", data, 0, 2, 2, 2, 1)
@@ -188,3 +209,17 @@ class CollisionShapeLookupTests(unittest.TestCase):
                     audit.collision_shape_id(paths, path, block)
         with self.assertRaises(ValueError):
             audit.collision_shape_id((bytes(767), bytes(768)), 0, 0)
+
+    def test_rejects_non_integer_path_index(self):
+        paths = (bytes(768), bytes(768))
+        for path_index in (0.0, 1.0, "0", False, True):
+            with self.subTest(path_index=path_index):
+                with self.assertRaises(ValueError):
+                    audit.collision_shape_id(paths, path_index, 0)
+
+    def test_rejects_non_integer_block_id(self):
+        paths = (bytes(768), bytes(768))
+        for block_id in (1.5, False, True):
+            with self.subTest(block_id=block_id):
+                with self.assertRaises(ValueError):
+                    audit.collision_shape_id(paths, 0, block_id)
