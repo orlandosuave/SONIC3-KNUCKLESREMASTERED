@@ -1,11 +1,27 @@
-class_name RomTerrainCollision
+﻿class_name RomTerrainCollision
 extends RefCounted
 
 ## Downward original-coordinate floor probes. No Godot physics-shape substitute.
 ## Wall/ceiling probes, object support and player integration are separate work.
 const Terrain = preload("res://scripts/rom/rom_terrain_decoder.gd")
 
+# Helper function to calculate collision properties, allowing data source override
+static func calculate_collision_from_source(
+	rom_input: PackedByteArray,
+	data_source_override: Dictionary = {}
+) -> Dictionary:
+	## Step 1: Decode the terrain using the flexible decoder
+	var bundle: Dictionary = Terrain.decode_aiz_main(rom_input, data_source_override)
+	if not bundle.get("ok", false):
+		return bundle # Pass failure back up
 
+	# Step 2: Calculate collision metrics using the decoded bundle
+	return {
+		"bundle": bundle,
+		"collision_engine": null # Collision probes are static; no instance is required
+	}
+
+# --- Existing private methods (now relying on the bundle provided by the calculator) ---
 static func _height(bundle: Dictionary, point: Vector2i, path: int, angle: int) -> Dictionary:
 	var layer: Dictionary = bundle["foreground"]
 	if point.x < 0 or point.y < 0 or point.x >= int(layer["width_chunks"]) * 128 or point.y >= int(layer["height_chunks"]) * 128:
@@ -43,7 +59,6 @@ static func _height(bundle: Dictionary, point: Vector2i, path: int, angle: int) 
 	result["angle"] = angle & 255
 	return result
 
-
 static func _neighbor(bundle: Dictionary, point: Vector2i, path: int, angle: int) -> Dictionary:
 	var result := _height(bundle, point, path, angle)
 	if not result["ok"]:
@@ -57,7 +72,6 @@ static func _neighbor(bundle: Dictionary, point: Vector2i, path: int, angle: int
 		distance = -local_y - 1
 	result["distance"] = distance
 	return result
-
 
 static func find_floor(bundle: Dictionary, point: Vector2i, path: int = 0, initial_angle: int = 0) -> Dictionary:
 	if path not in [0, 1] or not bundle.get("ok", false):

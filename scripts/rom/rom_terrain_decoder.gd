@@ -1,14 +1,18 @@
-class_name RomTerrainDecoder
+﻿class_name RomTerrainDecoder
 extends RefCounted
 
 ## Original-coordinate terrain data. No engine objects, cache writes or emulation.
 const Decoder = preload("res://scripts/rom/rom_data_decoder.gd")
 const Inspector = preload("res://scripts/rom/rom_inspector.gd")
 
+# Helper to extract data based on source
+static func get_data_source(rom_input: PackedByteArray, override_data: Dictionary) -> PackedByteArray:
+	if override_data != null and override_data.has("data"):
+		return override_data.data
+	return rom_input
 
 static func word(data: PackedByteArray, offset: int) -> int:
 	return (int(data[offset]) << 8) | int(data[offset + 1])
-
 
 static func decode_layout(data: PackedByteArray) -> Dictionary:
 	if data.size() < 136 or data.size() > 4096:
@@ -29,21 +33,22 @@ static func decode_layout(data: PackedByteArray) -> Dictionary:
 			"width_chunks": width, "height_chunks": height, "rows": rows}
 	return result
 
+static func decode_aiz_main(rom: PackedByteArray, data_source_override: Dictionary = {}) -> Dictionary:
+	var data_source = get_data_source(rom, data_source_override)
 
-static func decode_aiz_main(rom: PackedByteArray) -> Dictionary:
-	if rom.size() != Inspector.SUPPORTED_SIZE:
+	if data_source.size() != Inspector.SUPPORTED_SIZE:
 		return {"ok": false, "error": "Terrain requires the supported ROM profile."}
 	var hash_context := HashingContext.new()
 	hash_context.start(HashingContext.HASH_SHA256)
-	hash_context.update(rom)
+	hash_context.update(data_source)
 	if hash_context.finish().hex_encode() != Inspector.SUPPORTED_SHA256:
 		return {"ok": false, "error": "Terrain ROM fingerprint mismatch."}
-	var result := decode_layout(rom.slice(0x281420, 0x281420 + 2124))
+	var result := decode_layout(data_source.slice(0x281420, 0x281420 + 2124))
 	if not result["ok"]:
 		return result
 	var blocks := PackedByteArray()
 	for resource in [[0x3A374A, 512], [0x3A458A, 4320], [0x3ABC40, 14736]]:
-		var decoded := Decoder.decode_kosinski(rom.slice(resource[0], resource[0] + resource[1]))
+		var decoded := Decoder.decode_kosinski(data_source.slice(resource[0], resource[0] + resource[1]))
 		if not decoded["ok"]:
 			return decoded
 		if resource[0] == 0x3ABC40:
@@ -53,26 +58,25 @@ static func decode_aiz_main(rom: PackedByteArray) -> Dictionary:
 	result["blocks"] = blocks
 	var tiles := PackedByteArray()
 	for resource in [[0x3A566A, 3602], [0x3A944E, 10226]]:
-		var decoded := Decoder.decode_moduled_kosinski(rom.slice(resource[0], resource[0] + resource[1]))
+		var decoded := Decoder.decode_moduled_kosinski(data_source.slice(resource[0], resource[0] + resource[1]))
 		if not decoded["ok"]:
 			return decoded
 		tiles.append_array(decoded["data"])
 	result["tiles"] = tiles
-	var palette := rom.slice(0x28C234, 0x28C254)
-	palette.append_array(rom.slice(0x28C374, 0x28C3D4))
+	var palette := data_source.slice(0x28C234, 0x28C254)
+	palette.append_array(data_source.slice(0x28C374, 0x28C3D4))
 	result["palette"] = palette
 	result["collision_primary"] = PackedByteArray()
 	result["collision_secondary"] = PackedByteArray()
 	for i in range(768):
-		result["collision_primary"].append(rom[0x274761 + i * 2])
-		result["collision_secondary"].append(rom[0x274D61 + i * 2])
-	result["heights"] = rom.slice(0x96100, 0x97100)
-	result["rotated_heights"] = rom.slice(0x97100, 0x98100)
-	result["angles"] = rom.slice(0x96000, 0x96100)
+		result["collision_primary"].append(data_source[0x274761 + i * 2])
+		result["collision_secondary"].append(data_source[0x274D61 + i * 2])
+	result["heights"] = data_source.slice(0x96100, 0x97100)
+	result["rotated_heights"] = data_source.slice(0x97100, 0x98100)
+	result["angles"] = data_source.slice(0x96000, 0x96100)
 	result["schema_version"] = 1
 	result["variant"] = "aiz_main_static"
 	return result
-
 
 static func sample_pixel(bundle: Dictionary, layer_name: String, position: Vector2i) -> Dictionary:
 	if not bundle.get("ok", false) or not bundle.has(layer_name):
@@ -113,7 +117,6 @@ static func sample_pixel(bundle: Dictionary, layer_name: String, position: Vecto
 	return {"ok": true, "palette_index": ((tile_word >> 13) & 3) * 16 + color,
 		"transparent": color == 0, "priority": bool(tile_word & 32768),
 		"block_id": block_id, "solidity": (chunk_word >> 12) & 15}
-
 
 static func render_region(bundle: Dictionary, layer_name: String, region: Rect2i) -> Dictionary:
 	if region.size.x <= 0 or region.size.y <= 0 or region.size.x > 2048 or region.size.y > 2048:
