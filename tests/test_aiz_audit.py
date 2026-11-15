@@ -157,3 +157,15 @@ class LayoutAuditTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class CollisionIndexStructureTests(unittest.TestCase):
+    def test_two_paths_have_768_odd_offset_shape_indices_each(self):
+        path_size = 1536
+        synthetic = bytes(i % 256 for i in range(path_size * 2))
+        self.assertEqual(len(synthetic), 3072)
+        paths = (synthetic[:path_size], synthetic[path_size:])
+        for path in paths:
+            indices = path[1::2]
+            self.assertEqual(len(indices), 768)
+            self.assertEqual(indices[0], path[1])
+            self.assertEqual(indices[-1], path[1535])
