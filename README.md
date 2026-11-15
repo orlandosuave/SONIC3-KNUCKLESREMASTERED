@@ -6,12 +6,14 @@ The project now includes a standalone movement and collision prototype with orig
 
 Choose **Play encounter staging test** to try the Phase 3 character-centered encounter camera and ultrawide side masks. Move right to enter, wait through the warning and placeholder boss demo, then continue to the goal. **R** restarts this test. It uses original placeholder visuals and has no boss attacks yet.
 
-Phase 2 is complete as a playable prototype. Exact ROM fidelity gaps are tracked in the [ROM audit](docs/PHASE_2_ROM_AUDIT.md). Phase 3 (native 32:9 camera and display) is complete at prototype scope following successful owner playtests. See the [Phase 3 closeout](docs/PHASE_3_PLAN.md) for validation and follow-ups. Phase 4, the first complete playable act, is next.
+Phase 2 is complete as a playable prototype. Exact ROM fidelity gaps are tracked in the [ROM audit](docs/PHASE_2_ROM_AUDIT.md). Phase 3 (native 32:9 camera and display) is complete at prototype scope following successful owner playtests. See the [Phase 3 closeout](docs/PHASE_3_PLAN.md) for validation and follow-ups. Phase 4 is now in progress, starting with the [content and fidelity audit](docs/PHASE_4_CONTENT_AUDIT.md); the complete act is not yet playable.
 
 ## Project documents
 
 - [Project scope](docs/PROJECT_SCOPE.md) — goals, release boundaries, acceptance criteria, and open decisions
 - [Roadmap and stage tracker](docs/ROADMAP.md) — stage statuses, dependencies, checklists, and exit criteria
+- [Phase 4 plan](docs/PHASE_4_PLAN.md) — complete-act work packages, delivery gates, fidelity dependencies, and acceptance checks
+- [Original-ROM reference captures](docs/REFERENCE_CAPTURE.md) — local emulator tooling, scroll comparisons, measured visual gaps, and reproduction commands
 - [Phase 2 plan](docs/PHASE_2_PLAN.md) — completed movement prototype, validation, and fidelity follow-ups
 - [Phase 1 plan](docs/PHASE_1_PLAN.md) — ROM intake, decoding proof set, local cache, and detailed acceptance checks
 - [Reference analysis](docs/REFERENCE_ANALYSIS.md) — SMB1R's user-ROM pipeline, Sonic 3 A.I.R.'s release lessons, and the proposed Sonic architecture

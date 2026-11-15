@@ -177,6 +177,61 @@ static func _kosinski_pop_bit(reader: Dictionary) -> Dictionary:
 	return {"ok": true, "bit": bit}
 
 
+## Ordinary Kosinski streams have neither a size prefix nor module alignment.
+static func decode_kosinski(data: PackedByteArray, limit: int = 32768) -> Dictionary:
+	if limit < 1 or limit > MAX_KOSINSKI_OUTPUT_BYTES:
+		return _failure("Invalid Kosinski output limit.")
+	var reader := {"source": data, "cursor": 0, "descriptor": 0, "bits_left": 0}
+	var output := PackedByteArray()
+	for _operation in range(131072):
+		var first := _kosinski_pop_bit(reader)
+		if not first.get("ok", false):
+			return _failure("Truncated Kosinski descriptor.")
+		if first["bit"] == 1:
+			var literal := _kosinski_read_byte(reader)
+			if not literal.get("ok", false) or output.size() >= limit:
+				return _failure("Invalid Kosinski literal or output limit.")
+			output.append(int(literal["value"]))
+			continue
+		var second := _kosinski_pop_bit(reader)
+		if not second.get("ok", false):
+			return _failure("Truncated Kosinski match.")
+		var count := 0
+		var distance := 0
+		if second["bit"] == 1:
+			var low := _kosinski_read_byte(reader)
+			var high := _kosinski_read_byte(reader)
+			if not low.get("ok", false) or not high.get("ok", false):
+				return _failure("Truncated Kosinski long match.")
+			distance = 8192 - (((int(high["value"]) & 248) << 5) | int(low["value"]))
+			count = int(high["value"]) & 7
+			if count == 0:
+				var extension := _kosinski_read_byte(reader)
+				if not extension.get("ok", false):
+					return _failure("Truncated Kosinski extension.")
+				count = int(extension["value"])
+				if count == 0:
+					return {"ok": true, "data": output, "source_consumed": reader["cursor"]}
+				if count == 1:
+					continue
+				count += 1
+			else:
+				count += 2
+		else:
+			var bit_a := _kosinski_pop_bit(reader)
+			var bit_b := _kosinski_pop_bit(reader)
+			var offset := _kosinski_read_byte(reader)
+			if not bit_a.get("ok", false) or not bit_b.get("ok", false) or not offset.get("ok", false):
+				return _failure("Truncated Kosinski short match.")
+			count = (int(bit_a["bit"]) << 1) + int(bit_b["bit"]) + 2
+			distance = 256 - int(offset["value"])
+		if distance > output.size() or output.size() + count > limit:
+			return _failure("Kosinski match outside output bounds.")
+		for _copy in range(count):
+			output.append(output[output.size() - distance])
+	return _failure("Kosinski command limit exceeded.")
+
+
 static func _kosinski_read_byte(reader: Dictionary) -> Dictionary:
 	var source: PackedByteArray = reader["source"]
 	var cursor := int(reader["cursor"])

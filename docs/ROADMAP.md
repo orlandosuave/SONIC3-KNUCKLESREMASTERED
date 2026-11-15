@@ -4,7 +4,7 @@ This file is the stage-level source of truth for the project. It lives in the Gi
 
 ## Current stage
 
-**Stage 3 — Native 32:9 camera and display foundation** is complete at prototype scope as of 2026-11-14, following the project owner's successful playtests. **Stage 4 — First complete vertical slice** is next. See [Phase 3 closeout](PHASE_3_PLAN.md). Formal performance benchmarking and texture/art review carry into Stage 4; exact ROM parity remains a documented follow-up.
+**Stage 4 — First complete vertical slice** is in progress as of 2026-11-14, beginning with the [4A content/fidelity audit](PHASE_4_CONTENT_AUDIT.md) on `codex/phase-3-display`, based on `554fca9`. Stage 3 is complete at prototype scope; see [Phase 3 closeout](PHASE_3_PLAN.md). Formal performance benchmarking and texture/art review carry into Stage 4; exact ROM parity remains a documented follow-up.
 
 ## Stage overview
 
@@ -14,7 +14,7 @@ This file is the stage-level source of truth for the project. It lives in the Gi
 | 1 | Compatible ROM intake and data feasibility | Complete | Stage 0 |
 | 2 | 60 Hz movement and collision prototype | Complete | Stage 0; can run alongside Stage 1 |
 | 3 | Native 32:9 camera and display foundation | Complete (prototype scope) | Stage 2 |
-| 4 | First complete vertical slice | Not started | Stages 1–3 |
+| 4 | First complete vertical slice | In progress — 4A audit | Stages 1–3 |
 | 5 | SMB1R-style editor, packs, and replay modes | Not started | Stable runtime and level format |
 | 6 | Full Sonic 3 & Knuckles campaign | Not started | Stage 4 and campaign data format; can overlap Stage 5 |
 | 7 | Release candidate, compatibility, and packaging | Not started | Stages 5 and 6 |
@@ -92,6 +92,8 @@ Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.
 ### Stage 4 — First complete vertical slice
 
 **Goal:** deliver one polished act from title/start through completion, proving the importer, movement, camera, and user experience together.
+
+**Status:** 4A research is in progress; gameplay implementation has not started. The [Phase 4 plan](PHASE_4_PLAN.md) defines eight work packages and five delivery gates. The [content audit](PHASE_4_CONTENT_AUDIT.md) records the combined-ROM resource matches, first-map object census, coverage ledger, reference-capture procedure and decision log. Player-facing AIZ Act 1 requires part of the second internal map; route reachability, full resource schemas and detour decisions remain open before G0 closes.
 
 - [ ] Build one complete act with traversal, checkpoint, set piece/boss, and completion flow.
 - [ ] Record the Windows hardware baseline and benchmark 60 FPS at 1920×1080 and 5120×1440 (carried from Stage 3 prototype closeout).

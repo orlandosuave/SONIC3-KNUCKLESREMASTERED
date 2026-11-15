@@ -2,6 +2,7 @@ extends Control
 
 const RomInspector = preload("res://scripts/rom/rom_inspector.gd")
 const RomTextureImporter = preload("res://scripts/rom/rom_texture_importer.gd")
+const RomTerrainDecoder = preload("res://scripts/rom/rom_terrain_decoder.gd")
 const CACHE_ROOT := "user://imports"
 
 var _file_dialog: FileDialog
@@ -11,6 +12,7 @@ var _selected_label: Label
 var _cache_label: Label
 var _inspect_button: Button
 var _texture_button: Button
+var _terrain_button: Button
 var _texture_preview: TextureRect
 var _texture_status: Label
 var _selected_path := ""
@@ -120,6 +122,11 @@ func _build_ui() -> void:
 	_texture_button.disabled = true
 	_texture_button.pressed.connect(_build_aiz_texture_proof)
 	import_actions.add_child(_texture_button)
+	_terrain_button = Button.new()
+	_terrain_button.text = "Preview Angel Island terrain"
+	_terrain_button.disabled = true
+	_terrain_button.pressed.connect(_build_aiz_terrain_preview)
+	import_actions.add_child(_terrain_button)
 
 	_result_label = Label.new()
 	_result_label.text = "Check a supported ROM to enable a real AIZ Act 1 texture preview. Generated images stay in the local cache."
@@ -189,6 +196,7 @@ func _select_path(path: String) -> void:
 	_selected_path = path
 	_last_result.clear()
 	_texture_button.disabled = true
+	_terrain_button.disabled = true
 	_texture_preview.texture = null
 	_texture_status.text = ""
 	_texture_preview.visible = false
@@ -209,6 +217,7 @@ func _inspect_selected() -> void:
 	var first: Dictionary = _last_result.get("first_segment", {})
 	var second: Dictionary = _last_result.get("second_segment", {})
 	_texture_button.disabled = false
+	_terrain_button.disabled = false
 	_result_label.text = "Compatible profile: %s\nSize: %s bytes\nSHA-256: %s\nDetected: %s / %s" % [
 		_last_result.get("profile_id", "unknown"),
 		_last_result.get("byte_size", 0),
@@ -243,11 +252,36 @@ func _build_aiz_texture_proof() -> void:
 func _show_error(message: String) -> void:
 	_last_result = {"ok": false, "error": message}
 	_texture_button.disabled = true
+	_terrain_button.disabled = true
 	_texture_preview.texture = null
 	_texture_preview.visible = false
 	_texture_status.visible = false
 	_result_label.text = message
 	_result_label.modulate = Color("ff9c94")
+
+
+func _build_aiz_terrain_preview() -> void:
+	if not _last_result.get("ok", false):
+		return
+	_texture_status.visible = true
+	var bundle := RomTerrainDecoder.decode_aiz_main(_last_result["image_bytes"])
+	if not bundle.get("ok", false):
+		_texture_status.text = str(bundle.get("error", "Could not read terrain."))
+		_texture_status.modulate = Color("ff9c94")
+		return
+	var result := RomTerrainDecoder.render_region(bundle, "foreground", Rect2i(0x1995, 0x3B0, 320, 224))
+	if not result.get("ok", false):
+		_texture_status.text = str(result.get("error", "Could not render terrain."))
+		_texture_status.modulate = Color("ff9c94")
+		return
+	_texture_preview.texture = ImageTexture.create_from_image(result["image"])
+	_texture_preview.visible = true
+	_texture_status.text = "Angel Island Act 1 · Static foreground preview · Original ROM art"
+	_texture_status.modulate = Color("9be2b2")
+	await get_tree().process_frame
+	var scroll := find_child("MenuScroll", true, false) as ScrollContainer
+	if scroll != null:
+		scroll.ensure_control_visible(_texture_preview)
 
 
 func _refresh_cache_status() -> void:

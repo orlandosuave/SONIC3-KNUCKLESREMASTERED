@@ -57,6 +57,11 @@ func _check_import_screen(source_path: String) -> void:
 	screen._inspect_selected()
 	assert(screen._last_result.get("ok", false), "valid ROM should enable the import action")
 	assert(not screen._texture_button.disabled)
+	assert(not screen._terrain_button.disabled)
+	screen._build_aiz_terrain_preview()
+	await process_frame
+	assert(screen._texture_preview.texture.get_size() == Vector2(320, 224))
+	assert(screen._texture_status.text.contains("Static foreground"))
 	screen._build_aiz_texture_proof()
 	await process_frame
 	assert(screen._texture_preview.texture != null, "valid ROM should display the real tile atlas")
@@ -68,6 +73,7 @@ func _check_import_screen(source_path: String) -> void:
 	screen._select_path(ProjectSettings.globalize_path(invalid_path))
 	screen._inspect_selected()
 	assert(not screen._last_result.get("ok", false), "wrong-sized ROM should be rejected in the screen")
+	assert(screen._terrain_button.disabled)
 	assert(screen._texture_button.disabled, "rejected ROM must not enable the import action")
 	assert(str(screen._result_label.text).contains("expected 4 MiB"))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(invalid_path))
