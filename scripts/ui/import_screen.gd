@@ -3,6 +3,7 @@ extends Control
 const RomInspector = preload("res://scripts/rom/rom_inspector.gd")
 const RomTextureImporter = preload("res://scripts/rom/rom_texture_importer.gd")
 const RomTerrainDecoder = preload("res://scripts/rom/rom_terrain_decoder.gd")
+const TerrainSession = preload("res://scripts/gameplay/aiz_terrain_session.gd")
 const CACHE_ROOT := "user://imports"
 
 var _file_dialog: FileDialog
@@ -13,6 +14,8 @@ var _cache_label: Label
 var _inspect_button: Button
 var _texture_button: Button
 var _terrain_button: Button
+var _explore_button: Button
+var _rom_hint: Label
 var _texture_preview: TextureRect
 var _texture_status: Label
 var _selected_path := ""
@@ -90,6 +93,10 @@ func _build_ui() -> void:
 	_selected_label.modulate = Color("b7c4d6")
 	_selected_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(_selected_label)
+	_rom_hint = Label.new()
+	_rom_hint.text = "Step 1: Choose a ROM. Step 2: Check compatibility to unlock Angel Island previews."
+	_rom_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(_rom_hint)
 
 	var actions := HFlowContainer.new()
 	actions.add_theme_constant_override("separation", 10)
@@ -115,7 +122,11 @@ func _build_ui() -> void:
 	encounter_button.text = "Play encounter staging test"
 	encounter_button.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/encounter_prototype.tscn"))
 	content.add_child(encounter_button)
-	var import_actions := HBoxContainer.new()
+	var terrain_title := Label.new()
+	terrain_title.text = "ANGEL ISLAND  |  Requires a compatible ROM"
+	terrain_title.add_theme_font_size_override("font_size", 18)
+	content.add_child(terrain_title)
+	var import_actions := HFlowContainer.new()
 	content.add_child(import_actions)
 	_texture_button = Button.new()
 	_texture_button.text = "Build AIZ texture proof"
@@ -127,6 +138,12 @@ func _build_ui() -> void:
 	_terrain_button.disabled = true
 	_terrain_button.pressed.connect(_build_aiz_terrain_preview)
 	import_actions.add_child(_terrain_button)
+	var explore_button := Button.new()
+	explore_button.text = "Explore Angel Island terrain"
+	explore_button.disabled = true
+	explore_button.pressed.connect(_open_aiz_explorer)
+	import_actions.add_child(explore_button)
+	_explore_button = explore_button
 
 	_result_label = Label.new()
 	_result_label.text = "Check a supported ROM to enable a real AIZ Act 1 texture preview. Generated images stay in the local cache."
@@ -195,15 +212,19 @@ func _open_decoder_preview() -> void:
 func _select_path(path: String) -> void:
 	_selected_path = path
 	_last_result.clear()
+	TerrainSession.bundle = {}
 	_texture_button.disabled = true
 	_terrain_button.disabled = true
+	_explore_button.disabled = true
 	_texture_preview.texture = null
 	_texture_status.text = ""
 	_texture_preview.visible = false
 	_texture_status.visible = false
 	_selected_label.text = "Selected: %s" % path.get_file()
 	_inspect_button.disabled = false
-	_result_label.text = "Ready to check this file. The source will be opened read-only."
+	_result_label.text = "ROM selected. Checking compatibility..."
+	_rom_hint.text = "Checking ROM compatibility..."
+	_inspect_selected()
 	_result_label.modulate = Color("d6deea")
 
 
@@ -218,6 +239,8 @@ func _inspect_selected() -> void:
 	var second: Dictionary = _last_result.get("second_segment", {})
 	_texture_button.disabled = false
 	_terrain_button.disabled = false
+	_explore_button.disabled = false
+	_rom_hint.text = "ROM compatible. Angel Island preview and exploration are now unlocked."
 	_result_label.text = "Compatible profile: %s\nSize: %s bytes\nSHA-256: %s\nDetected: %s / %s" % [
 		_last_result.get("profile_id", "unknown"),
 		_last_result.get("byte_size", 0),
@@ -250,14 +273,29 @@ func _build_aiz_texture_proof() -> void:
 
 
 func _show_error(message: String) -> void:
+	_rom_hint.text = "ROM not ready. Select a supported ROM to unlock Angel Island previews."
 	_last_result = {"ok": false, "error": message}
+	TerrainSession.bundle = {}
 	_texture_button.disabled = true
 	_terrain_button.disabled = true
+	_explore_button.disabled = true
 	_texture_preview.texture = null
 	_texture_preview.visible = false
 	_texture_status.visible = false
 	_result_label.text = message
 	_result_label.modulate = Color("ff9c94")
+
+
+func _open_aiz_explorer() -> void:
+	if not _last_result.get("ok", false):
+		return
+	var bundle := RomTerrainDecoder.decode_aiz_main(_last_result["image_bytes"])
+	if not bundle.get("ok", false):
+		_texture_status.visible = true
+		_texture_status.text = str(bundle.get("error", "Could not decode terrain."))
+		return
+	TerrainSession.bundle = bundle
+	get_tree().change_scene_to_file("res://scenes/aiz_terrain_explorer.tscn")
 
 
 func _build_aiz_terrain_preview() -> void:
