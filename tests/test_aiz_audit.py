@@ -169,3 +169,22 @@ class CollisionIndexStructureTests(unittest.TestCase):
             self.assertEqual(len(indices), 768)
             self.assertEqual(indices[0], path[1])
             self.assertEqual(indices[-1], path[1535])
+
+
+class CollisionShapeLookupTests(unittest.TestCase):
+    def test_lookup_uses_separate_paths(self):
+        data = bytearray(3072)
+        data[1 + 2 * 767] = 17
+        data[0x601 + 2 * 767] = 203
+        paths = audit.parse_aiz_collision(bytes(data))
+        self.assertEqual(audit.collision_shape_id(paths, 0, 767), 17)
+        self.assertEqual(audit.collision_shape_id(paths, 1, 767), 203)
+
+    def test_rejects_out_of_range_inputs(self):
+        paths = (bytes(768), bytes(768))
+        for path, block in ((-1, 0), (2, 0), (0, -1), (1, 768)):
+            with self.subTest(path=path, block=block):
+                with self.assertRaises(ValueError):
+                    audit.collision_shape_id(paths, path, block)
+        with self.assertRaises(ValueError):
+            audit.collision_shape_id((bytes(767), bytes(768)), 0, 0)
