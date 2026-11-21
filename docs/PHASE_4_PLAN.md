@@ -1,5 +1,7 @@
 # Phase 4 — First complete vertical slice
 
+**Local development update (2026-11-21):** the owner reports starting the 24-item local-model microtask session. See [workflow, task sizing and evidence boundaries](LOCAL_CODING_WORKFLOW.md). Queue execution does not itself close a phase gate.
+
 **Status: In progress — 4A content/fidelity audit started 2026-11-14.** Started on `codex/phase-3-display`, based on `554fca9`. This plan expands Stage 4 of [the roadmap](ROADMAP.md) and preserves [the project's original-game fidelity requirement](PROJECT_SCOPE.md). See the [content audit and coverage ledger](PHASE_4_CONTENT_AUDIT.md). Gameplay implementation has not started; G0 remains open.
 
 ## Outcome and proposed boundary

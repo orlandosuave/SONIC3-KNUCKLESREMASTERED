@@ -1,5 +1,7 @@
 # Project Roadmap and Stage Tracker
 
+**Local development update (2026-11-21):** the owner reports starting the 24-item local-model microtask session. See [workflow, task sizing and evidence boundaries](LOCAL_CODING_WORKFLOW.md). Queue execution does not itself close a phase gate.
+
 This file is the stage-level source of truth for the project. It lives in the GitHub repository, so each status change is recorded in the commit history. Detailed product requirements remain in [PROJECT_SCOPE.md](PROJECT_SCOPE.md); technical reference findings are in [REFERENCE_ANALYSIS.md](REFERENCE_ANALYSIS.md).
 
 ## Current stage
