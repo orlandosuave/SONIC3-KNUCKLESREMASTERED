@@ -20,15 +20,15 @@ Use a trusted official core. The scripts do not download or execute a core autom
 Requires Python and Pillow. From the project directory:
 
 ```text
-python tools/capture_reference.py <supported-local-ROM-or-ZIP> --frames 3600
-python tools/compare_aiz_reference.py <supported-local-ROM-or-ZIP> --frame 2220
-python tools/compare_aiz_reference.py <supported-local-ROM-or-ZIP> --frame 2640
+python tools/capture_reference.py <supported-local-ROM-or-ZIP> --frames 3600 --run new-evidence-name
+python tools/compare_aiz_reference.py <supported-local-ROM-or-ZIP> --frame 2220 --run new-evidence-name
+python tools/compare_aiz_reference.py <supported-local-ROM-or-ZIP> --frame 2640 --run new-evidence-name
 python -m unittest discover -s tests -p "test_aiz_*.py"
 ```
 
 The capture host uses a fresh in-memory session, scripted Start inputs at ticks 300/600/900 and right/jump inputs after tick 1200. It records every input tick and captures every 60th frame, with both pre-run and post-run RAM. Audio is consumed without playback. `capture.json` records the core hash/version, ROM identity, options, region and sample list. This boot sequence reaches default Sonic-and-Tails gameplay; it is **not yet the planned Sonic-alone route suite**, a complete traversal, or an act-completion test. The screenshots visibly include Tails.
 
-Runs reuse filenames in this dedicated research directory. Preserve a run separately before changing the script/core if historical captures are needed. Comparison is deliberately limited to the documented 1740–3600-frame boot/traversal window; it is not a general arbitrary-save-state analyzer. Its intro/main classification is a window-specific heuristic based on background Y and requires tightening before wider use.
+As of 2026-11-21, every capture uses a new directory. Omitting `--run` generates a UTC timestamp plus random suffix; an existing directory is rejected even for a non-dense capture. Use the printed run name with comparison tools. Older captures directly under the reference directory remain available with the comparison tool's default empty run. Comparison is deliberately limited to the documented 1740–3600-frame boot/traversal window; it is not a general arbitrary-save-state analyzer. Its intro/main classification is a window-specific heuristic based on background Y and requires tightening before wider use.
 
 ## Scroll model and measured result
 

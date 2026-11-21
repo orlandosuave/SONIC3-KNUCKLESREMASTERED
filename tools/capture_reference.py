@@ -10,6 +10,8 @@ import gzip
 import json
 import os
 import re
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from PIL import Image
 from audit_aiz_content import read_image, PROFILE_HASH
@@ -40,7 +42,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("rom", type=Path)
     parser.add_argument("--frames", type=int, default=1800)
-    parser.add_argument("--run", default="", help="Separate capture directory name under reference")
+    parser.add_argument("--run", default="", help="New capture directory name (default: unique UTC run)")
     parser.add_argument("--state-frame", type=int, action="append", default=[], help="Save diagnostic core state before/after this frame")
     parser.add_argument("--profile", choices=("sonic-tails", "sonic-alone"), default="sonic-tails")
     parser.add_argument("--dense", action="append", default=[], metavar="FIRST:LAST",
@@ -71,13 +73,15 @@ def main():
             parser.error("Invalid input override")
     root = Path(os.environ["LOCALAPPDATA"]) / "S3KRemastered/research/reference"
     core_path = root / "genesis_plus_gx_libretro.dll"
-    if args.run:
-        if not all(c.isalnum() or c in "-_" for c in args.run):
-            parser.error("run name must contain only letters, numbers, hyphens or underscores")
-        root = root / args.run
-    root.mkdir(parents=True, exist_ok=True)
-    if (root / "capture.json").exists() and (dense or args.resume_state):
-        parser.error("Use a new run name to preserve existing dense/checkpoint evidence")
+    args.run = args.run or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-") + uuid.uuid4().hex[:8]
+    if not all(c.isalnum() or c in "-_" for c in args.run):
+        parser.error("run name must contain only letters, numbers, hyphens or underscores")
+    root = root / args.run
+    try:
+        root.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        parser.error("Run directory already exists; choose a new name to preserve evidence")
+    print("Capture directory:", root, flush=True)
     core = C.CDLL(str(core_path))
     info = SystemInfo()
     core.retro_get_system_info.argtypes = [C.POINTER(SystemInfo)]
