@@ -109,6 +109,11 @@ static func import_aiz_intro(image_bytes: PackedByteArray) -> Dictionary:
 	return result
 
 
+## Reopen only fingerprint-verified local generated tiles; never load the ROM from cache.
+static func load_aiz_intro_cache() -> Dictionary:
+	return _read_cache(ProjectSettings.globalize_path(_cache_path()), _cache_path(), SOURCE_SHA256)
+
+
 static func _cache_path() -> String:
 	return CACHE_ROOT.path_join(PROFILE_ID).path_join(SOURCE_SHA256).path_join("%d-%d" % [SCHEMA_VERSION, IMPORTER_VERSION])
 
