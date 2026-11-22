@@ -82,6 +82,75 @@ static func _height(bundle: Dictionary, point: Vector2i, path: int, angle: int) 
 	return result
 
 
+
+static func _wall_height(bundle: Dictionary, point: Vector2i, path: int, angle: int) -> Dictionary:
+	if path not in [0, 1]:
+		return {"ok": false, "error": "Invalid wall collision path."}
+	var foreground: Variant = bundle.get("foreground")
+	if not foreground is Dictionary:
+		return {"ok": false, "error": "Invalid wall collision layout."}
+	var layer: Dictionary = foreground
+	if not layer.has("width_chunks") or not layer.has("height_chunks"):
+		return {"ok": false, "error": "Missing wall collision dimensions."}
+	if not layer["width_chunks"] is int or not layer["height_chunks"] is int or layer["width_chunks"] <= 0 or layer["height_chunks"] <= 0:
+		return {"ok": false, "error": "Invalid wall collision dimensions."}
+	if point.x < 0 or point.y < 0 or point.x >= int(layer["width_chunks"]) * 128 or point.y >= int(layer["height_chunks"]) * 128:
+		return {"ok": false, "error": "Wall probe outside layout bounds."}
+	var rows: Variant = layer.get("rows")
+	if not rows is Array:
+		return {"ok": false, "error": "Invalid wall layout rows."}
+	var row_index: int = point.y / 128
+	if row_index >= rows.size():
+		return {"ok": false, "error": "Missing wall layout row."}
+	var selected_row: Variant = rows[row_index]
+	if not selected_row is PackedByteArray:
+		return {"ok": false, "error": "Invalid wall layout row."}
+	var row: PackedByteArray = selected_row
+	var chunk_column: int = point.x / 128
+	if chunk_column >= row.size():
+		return {"ok": false, "error": "Missing wall layout column."}
+	var chunk_id: int = row[chunk_column]
+	var chunk_data: Variant = bundle.get("chunks")
+	if not chunk_data is PackedByteArray:
+		return {"ok": false, "error": "Invalid wall collision chunks."}
+	var chunks: PackedByteArray = chunk_data
+	var offset: int = chunk_id * 128 + ((point.y % 128) / 16 * 8 + (point.x % 128) / 16) * 2
+	if offset + 2 > chunks.size():
+		return {"ok": false, "error": "Missing wall collision chunk."}
+	var entry: int = Terrain.word(chunks, offset)
+	var block_id: int = entry & 1023
+	var result := {"ok": true, "height": 0, "angle": angle, "block_id": block_id}
+	if block_id == 0 or not (entry & (1 << (13 + path * 2))):
+		return result
+	var selected_indexes: Variant = bundle.get("collision_primary" if path == 0 else "collision_secondary")
+	if not selected_indexes is PackedByteArray:
+		return {"ok": false, "error": "Invalid wall collision indexes."}
+	var indexes: PackedByteArray = selected_indexes
+	if block_id >= indexes.size():
+		return {"ok": false, "error": "Missing wall collision index."}
+	var shape: int = indexes[block_id]
+	if shape == 0:
+		return result
+	var angle_data: Variant = bundle.get("angles")
+	if not angle_data is PackedByteArray:
+		return {"ok": false, "error": "Invalid wall collision angles."}
+	var angles: PackedByteArray = angle_data
+	if shape >= angles.size():
+		return {"ok": false, "error": "Missing wall collision angle."}
+	var rotated_data: Variant = bundle.get("rotated_heights")
+	if not rotated_data is PackedByteArray:
+		return {"ok": false, "error": "Invalid rotated collision heights."}
+	var rotated: PackedByteArray = rotated_data
+	var height_index: int = shape * 16 + (point.y & 15)
+	if height_index >= rotated.size():
+		return {"ok": false, "error": "Missing rotated collision sample."}
+	var height: int = rotated[height_index]
+	if height >= 128:
+		height -= 256
+	result["height"] = height
+	result["angle"] = int(angles[shape]) & 255
+	return result
+
 static func _neighbor(bundle: Dictionary, point: Vector2i, path: int, angle: int) -> Dictionary:
 	var result := _height(bundle, point, path, angle)
 	if not result["ok"]:
