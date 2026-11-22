@@ -18,6 +18,13 @@ func _initialize() -> void:
 	var center := FollowCamera.bounded_center(Vector2(99999, 99999), Vector2(frame.size), bounds)
 	assert(center == bounds.get_center())
 	print("PASS: AIZ 32:9 framing bounds both flat and uphill ROM-sampled terrain")
+	assert(AizPreview.TARGET_DISPLAY_SIZE == Vector2i(5120, 1440))
+	assert(AizPreview.AIZ_REGION.size == Vector2i(2560, 720))
+	assert(AizPreview._aiz_zoom_for_viewport(Vector2(5120, 1440)) == Vector2(2, 2))
+	assert(AizPreview._aiz_zoom_for_viewport(Vector2(1600, 450)) == Vector2(0.625, 0.625))
+	assert(Vector2(AizPreview.TARGET_DISPLAY_SIZE) == Vector2(AizPreview.AIZ_REGION.size) * AizPreview.WORLD_PIXEL_SCALE)
+	print("PASS: 5120x1440 covers 2560x720 source world at 2x with no stretch")
+	_test_tile_palette_flips_priority()
 	assert(AizPreview.NEXT_ROUTE_FIRST_X == AizPreview.ROUTE_LAST_X)
 	assert(AizPreview.NEXT_ROUTE_LAST_VERIFIED_X - AizPreview.NEXT_ROUTE_FIRST_X <= 256)
 	assert(AizPreview.NEXT_ROUTE_LAST_VERIFIED_X == 7480)
@@ -280,3 +287,51 @@ func _initialize() -> void:
 		print("Local native terrain: every resource hash and all 71,680 RGBA pixels match the independent Python decoder.")
 	print("Native terrain synthetic checks passed.")
 	quit(0)
+
+
+func _test_tile_palette_flips_priority() -> void:
+	var chunks := PackedByteArray()
+	chunks.resize(128)
+	chunks[0] = 0
+	chunks[1] = 1
+	var blocks := PackedByteArray()
+	blocks.resize(16)
+	var tiles := PackedByteArray()
+	tiles.resize(64)
+	for y in range(8):
+		for x in range(8):
+			var color := (x + 2 * y) % 15 + 1
+			var offset := 32 + y * 4 + x / 2
+			if x % 2 == 0:
+				tiles[offset] = (tiles[offset] & 0x0F) | (color << 4)
+			else:
+				tiles[offset] = (tiles[offset] & 0xF0) | color
+	var palette := PackedByteArray()
+	palette.resize(128)
+	palette[33 * 2] = 0x00
+	palette[33 * 2 + 1] = 0xE0
+	palette[40 * 2] = 0x0E
+	palette[40 * 2 + 1] = 0x00
+	var bundle := {
+		"ok": true,
+		"foreground": {"width_chunks": 1, "height_chunks": 1, "rows": [PackedByteArray([0])]},
+		"chunks": chunks,
+		"blocks": blocks,
+		"tiles": tiles,
+		"palette": palette
+	}
+	for expected in [
+		{"word": 0xC001, "color": 1},
+		{"word": 0xC801, "color": 8},
+		{"word": 0xD001, "color": 15},
+		{"word": 0xD801, "color": 7}
+	]:
+		blocks[8] = int(expected["word"]) >> 8
+		blocks[9] = int(expected["word"]) & 0xFF
+		bundle["blocks"] = blocks
+		var pixel: Dictionary = Terrain.sample_pixel(bundle, "foreground", Vector2i.ZERO)
+		assert(pixel["ok"] and pixel["priority"] and not pixel["transparent"])
+		assert(pixel["palette_index"] == 32 + expected["color"])
+	var unflipped: Dictionary = Terrain.render_region(bundle, "foreground", Rect2i(0, 0, 8, 8))
+	assert(unflipped["ok"] and unflipped["image"].get_width() == 8)
+	print("PASS: palette 2, priority and all four tile flip modes preserve pixel indices")

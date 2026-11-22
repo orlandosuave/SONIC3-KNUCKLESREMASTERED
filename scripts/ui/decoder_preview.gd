@@ -7,7 +7,12 @@ const Collision = preload("res://scripts/gameplay/rom_terrain_collision.gd")
 const TextureImporter = preload("res://scripts/rom/rom_texture_importer.gd")
 const Player = preload("res://scripts/gameplay/player_controller.gd")
 const Camera = preload("res://scripts/gameplay/prototype_camera.gd")
-const AIZ_REGION := Rect2i(6816, 888, 576, 162)
+# Pixel-perfect 32:9: 2560 x 720 source-world pixels at 2x = 5120 x 1440.
+# The terrain must be rendered across this entire region; no 576-pixel crop zoom.
+const TARGET_DISPLAY_SIZE := Vector2i(5120, 1440)
+const WORLD_PIXEL_SCALE := 2.0
+const AIZ_REGION := Rect2i(5760, 560, 2560, 720)
+const AIZ_STRIP_WIDTH := 512
 const ROUTE_FIRST_X := 6880
 const ROUTE_LAST_X := 7264
 # Local supported-ROM 8px ground scan verifies x7264..7480 at y975..978.
@@ -225,8 +230,8 @@ func _load_aiz_slice(path: String) -> void:
 	if not floor.get("ok", false):
 		_aiz_error(str(floor.get("error", "No bounded collision route.")))
 		return
-	var background: Dictionary = Terrain.render_region(bundle, "background", AIZ_REGION)
-	var foreground: Dictionary = Terrain.render_region(bundle, "foreground", AIZ_REGION)
+	var background: Dictionary = _render_aiz_layer(bundle, "background")
+	var foreground: Dictionary = _render_aiz_layer(bundle, "foreground")
 	if not background.get("ok", false) or not foreground.get("ok", false):
 		_aiz_error("ROM layout, chunk or tile references could not be rendered.")
 		return
@@ -278,6 +283,23 @@ func _load_aiz_slice(path: String) -> void:
 		" flat=", floor["flat_samples"], " slope=", floor["slope_samples"], " region=", AIZ_REGION)
 
 
+# The original 2,048px render bound stays intact; compose five independently
+# validated 512px source strips to render every visible 32:9 world pixel.
+# Missing ROM assets fail the render rather than repeating or inventing tiles.
+static func _render_aiz_layer(bundle: Dictionary, layer_name: String) -> Dictionary:
+	var canvas := Image.create(AIZ_REGION.size.x, AIZ_REGION.size.y, false, Image.FORMAT_RGBA8)
+	canvas.fill(Color.TRANSPARENT)
+	for offset in range(0, AIZ_REGION.size.x, AIZ_STRIP_WIDTH):
+		var strip_size := Vector2i(mini(AIZ_STRIP_WIDTH, AIZ_REGION.size.x - offset), AIZ_REGION.size.y)
+		var strip_region := Rect2i(AIZ_REGION.position + Vector2i(offset, 0), strip_size)
+		var rendered: Dictionary = Terrain.render_region(bundle, layer_name, strip_region)
+		if not rendered.get("ok", false):
+			return {"ok": false, "error": "%s strip at x%d: %s" % [
+				layer_name, strip_region.position.x, rendered.get("error", "unavailable tile")]}
+		canvas.blit_rect(rendered["image"], Rect2i(Vector2i.ZERO, strip_size), Vector2i(offset, 0))
+	return {"ok": true, "image": canvas, "strip_count": ceili(float(AIZ_REGION.size.x) / AIZ_STRIP_WIDTH)}
+
+
 func _register_aiz_input(action: String, keys: Array) -> void:
 	if not InputMap.has_action(action):
 		InputMap.add_action(action)
@@ -311,12 +333,19 @@ func _build_aiz_hud() -> void:
 	back.pressed.connect(_return_to_preview)
 
 
+# Scaling the viewport, not stretching Sonic or terrain: a 5120x1440
+# window produces exactly two screen pixels per one world pixel.
+static func _aiz_zoom_for_viewport(view_size: Vector2) -> Vector2:
+	if view_size.x <= 0.0 or view_size.y <= 0.0:
+		return Vector2.ONE
+	var factor := minf(view_size.x / float(AIZ_REGION.size.x), view_size.y / float(AIZ_REGION.size.y))
+	return Vector2.ONE * factor
+
+
 func _update_aiz_frame() -> void:
 	if not is_instance_valid(_aiz_camera):
 		return
-	var window_size := get_viewport_rect().size
-	var factor := minf(window_size.x / float(AIZ_REGION.size.x), window_size.y / float(AIZ_REGION.size.y))
-	_aiz_camera.zoom = Vector2.ONE * factor
+	_aiz_camera.zoom = _aiz_zoom_for_viewport(get_viewport_rect().size)
 	_aiz_camera.snap_to_target()
 
 
