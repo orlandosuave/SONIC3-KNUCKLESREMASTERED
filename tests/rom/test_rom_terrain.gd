@@ -4,9 +4,19 @@ const Terrain = preload("res://scripts/rom/rom_terrain_decoder.gd")
 const Decoder = preload("res://scripts/rom/rom_data_decoder.gd")
 const Inspector = preload("res://scripts/rom/rom_inspector.gd")
 const Collision = preload("res://scripts/gameplay/rom_terrain_collision.gd")
+const AizPreview = preload("res://scripts/ui/decoder_preview.gd")
+const FollowCamera = preload("res://scripts/gameplay/prototype_camera.gd")
 
 
 func _initialize() -> void:
+	var frame: Rect2i = AizPreview.AIZ_REGION
+	assert(frame.size.x * 9 == frame.size.y * 32)
+	assert(frame.has_point(Vector2i(AizPreview.ROUTE_FIRST_X, 1007)))
+	assert(frame.has_point(Vector2i(AizPreview.ROUTE_LAST_X, 975)))
+	var bounds := Rect2(frame.position, frame.size)
+	var center := FollowCamera.bounded_center(Vector2(99999, 99999), Vector2(frame.size), bounds)
+	assert(center == bounds.get_center())
+	print("PASS: AIZ 32:9 framing bounds both flat and uphill ROM-sampled terrain")
 	var collision_bundle := {
 		"foreground": {"width_chunks": 1, "height_chunks": 1, "rows": [PackedByteArray([0])]},
 		"chunks": PackedByteArray([0, 0])
