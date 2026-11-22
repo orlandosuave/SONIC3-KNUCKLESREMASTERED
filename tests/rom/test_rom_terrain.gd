@@ -3,9 +3,31 @@ extends SceneTree
 const Terrain = preload("res://scripts/rom/rom_terrain_decoder.gd")
 const Decoder = preload("res://scripts/rom/rom_data_decoder.gd")
 const Inspector = preload("res://scripts/rom/rom_inspector.gd")
+const Collision = preload("res://scripts/gameplay/rom_terrain_collision.gd")
 
 
 func _initialize() -> void:
+	var collision_bundle := {
+		"foreground": {"width_chunks": 1, "height_chunks": 1, "rows": [PackedByteArray([0])]},
+		"chunks": PackedByteArray([0, 0])
+	}
+	var missing_chunks := collision_bundle.duplicate(true)
+	missing_chunks.erase("chunks")
+	assert(not Collision._height(missing_chunks, Vector2i.ZERO, 0, 0)["ok"])
+	print("PASS: missing chunks returns ok:false")
+	var wrong_buffer := collision_bundle.duplicate(true)
+	wrong_buffer["chunks"] = [0, 0]
+	assert(not Collision._height(wrong_buffer, Vector2i.ZERO, 0, 0)["ok"])
+	print("PASS: wrong buffer type returns ok:false")
+	var truncated := collision_bundle.duplicate(true)
+	truncated["chunks"] = PackedByteArray([0])
+	assert(not Collision._height(truncated, Vector2i.ZERO, 0, 0)["ok"])
+	print("PASS: one-byte-short word returns ok:false")
+	var complete := Collision._height(collision_bundle, Vector2i.ZERO, 0, 0)
+	assert(complete["ok"])
+	print("PASS: last complete word succeeds")
+	assert(complete["height"] == 0 and complete["block_id"] == 0)
+	print("PASS: empty block preserves height zero")
 	var stream := PackedByteArray([0x41, 0, 65, 255, 0, 0, 0])
 	assert(Decoder.decode_kosinski(stream)["data"] == PackedByteArray([65, 65, 65]))
 	for length in range(stream.size()):
