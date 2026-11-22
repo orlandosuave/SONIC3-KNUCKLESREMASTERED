@@ -109,6 +109,9 @@ Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.
 
 **2026-11-22 next streaming milestone (not installed as cards):** document source-backed distant/cloud and water layers, confirm VRAM/nametable/palette upload events, then add adjacent 512-pixel ROM-validated streaming and bounded camera movement before independent 5120 x 1440 visual/route comparison. Preserve the exact 2x world scale and coordinate with the already queued p4cam/route/scale milestones. The content audit lists four proposed collision-free IDs and their gates.
 
+**2026-11-22 bounded ultrawide playtest:** an independently captured 5120 x 1440 offscreen OpenGL image verifies 2x world coverage after 127 rightward movement physics ticks, flat/slope traversal and endpoint reachability without teleportation. Native 5120 x 1440 display presence was detected, but physical fullscreen, sustained performance and full-act fidelity remain unverified. See the content audit and playtest metadata for exact hashes and known gaps.
+
+
 ### Stage 5 — SMB1R-style editor, packs, and replay modes
 
 **Goal:** make creation, customization, and replay built-in workflows.

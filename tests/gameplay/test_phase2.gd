@@ -7,10 +7,45 @@ func check(ok: bool, message: String) -> void:
 		failures += 1
 		push_error(message)
 
+
+const RomCollision = preload("res://scripts/gameplay/rom_terrain_collision.gd")
+
+func test_bounded_route_scan() -> void:
+	var chunk := PackedByteArray()
+	chunk.resize(128)
+	for tile_x in range(4):
+		var entry := 0x1001 if tile_x < 2 else 0x1002
+		var offset := (4 * 8 + tile_x) * 2
+		chunk[offset] = entry >> 8
+		chunk[offset + 1] = entry & 0xFF
+	var heights := PackedByteArray()
+	heights.resize(48)
+	for col in range(16):
+		heights[16 + col] = 16
+		heights[32 + col] = 16 - col / 2
+	var fixture := {
+		"ok": true,
+		"foreground": {"width_chunks": 1, "height_chunks": 1, "rows": [PackedByteArray([0])]},
+		"chunks": chunk,
+		"collision_primary": PackedByteArray([0, 1, 2]),
+		"angles": PackedByteArray([0, 1, 248]),
+		"heights": heights
+	}
+	var route: Dictionary = RomCollision.sample_bounded_floor_route(fixture, 8, 56, 52, 84)
+	check(route.get("ok", false) and route["points"].size() == 7, "Bounded flat/slope samples reach declared endpoint")
+	check(route.get("flat_samples", 0) >= 3 and route.get("slope_samples", 0) >= 4, "Bounded route includes both flat and slope terrain")
+	check(route.get("end_x", -1) == 56 and route["points"][0].x == 8.0 and route["points"][-1].x == 56.0, "Bounded route preserves start/endpoint")
+	var edge: Dictionary = RomCollision.sample_bounded_floor_route(fixture, 8, 72, 52, 84)
+	check(not edge.get("ok", true) and edge.get("blocked_x", -1) == 64, "Missing edge cannot be crossed or teleported")
+	check(not RomCollision.sample_bounded_floor_route(fixture, 8, 56, 52, 84, 0).get("ok", true), "Zero stride rejected")
+	check(not RomCollision.sample_bounded_floor_route(fixture, 56, 8, 52, 84).get("ok", true), "Reverse endpoint rejected")
+	print("AIZ_BOUNDED_ROUTE_SYNTHETIC_PASS")
+
 func _initialize() -> void:
 	run.call_deferred()
 
 func run() -> void:
+	test_bounded_route_scan()
 	var room = load("res://scenes/movement_prototype.tscn").instantiate()
 	root.add_child(room)
 	var player = room.player
