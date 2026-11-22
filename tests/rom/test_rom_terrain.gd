@@ -6,6 +6,7 @@ const Inspector = preload("res://scripts/rom/rom_inspector.gd")
 const Collision = preload("res://scripts/gameplay/rom_terrain_collision.gd")
 const AizPreview = preload("res://scripts/ui/decoder_preview.gd")
 const FollowCamera = preload("res://scripts/gameplay/prototype_camera.gd")
+const TextureImporter = preload("res://scripts/rom/rom_texture_importer.gd")
 
 
 func _initialize() -> void:
@@ -21,6 +22,30 @@ func _initialize() -> void:
 	assert(AizPreview.NEXT_ROUTE_LAST_VERIFIED_X - AizPreview.NEXT_ROUTE_FIRST_X <= 256)
 	assert(AizPreview.NEXT_ROUTE_LAST_VERIFIED_X == 7480)
 	print("PASS: follow-up AIZ route stops before unsupported ground at x7488")
+	assert(TextureImporter.DECODER_VERSION == Terrain.DECODER_VERSION)
+	var manifest_meta := {
+		"schema_version": TextureImporter.SCHEMA_VERSION,
+		"importer_version": TextureImporter.IMPORTER_VERSION,
+		"profile_id": TextureImporter.PROFILE_ID,
+		"source_sha256": TextureImporter.SOURCE_SHA256,
+		"decoder_version": TextureImporter.DECODER_VERSION,
+	}
+	var valid_meta: Dictionary = TextureImporter._verify_cache_provenance(manifest_meta, TextureImporter.SOURCE_SHA256)
+	assert(valid_meta["ok"] and not valid_meta["legacy_decoder_version_inferred"])
+	var bad_meta := manifest_meta.duplicate(true)
+	bad_meta["profile_id"] = "unsupported-profile"
+	assert(not TextureImporter._verify_cache_provenance(bad_meta, TextureImporter.SOURCE_SHA256)["ok"])
+	bad_meta = manifest_meta.duplicate(true)
+	bad_meta["source_sha256"] = "invalid-source"
+	assert(not TextureImporter._verify_cache_provenance(bad_meta, TextureImporter.SOURCE_SHA256)["ok"])
+	bad_meta = manifest_meta.duplicate(true)
+	bad_meta["decoder_version"] = TextureImporter.DECODER_VERSION + 1
+	assert(not TextureImporter._verify_cache_provenance(bad_meta, TextureImporter.SOURCE_SHA256)["ok"])
+	bad_meta = manifest_meta.duplicate(true)
+	bad_meta.erase("decoder_version")
+	var legacy_meta: Dictionary = TextureImporter._verify_cache_provenance(bad_meta, TextureImporter.SOURCE_SHA256)
+	assert(legacy_meta["ok"] and legacy_meta["legacy_decoder_version_inferred"])
+	print("PASS: AIZ cache provenance rejects wrong profile, hash and decoder version")
 	var collision_bundle := {
 		"foreground": {"width_chunks": 1, "height_chunks": 1, "rows": [PackedByteArray([0])]},
 		"chunks": PackedByteArray([0, 0])

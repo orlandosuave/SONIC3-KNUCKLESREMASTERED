@@ -4,6 +4,8 @@ extends RefCounted
 ## Minimal real-ROM proof for AIZ Act 1 intro tile art. These fixed ranges are
 ## valid only for the exact profile fingerprint checked below.
 const Decoder = preload("res://scripts/rom/rom_data_decoder.gd")
+const TerrainDecoder = preload("res://scripts/rom/rom_terrain_decoder.gd")
+const DECODER_VERSION := TerrainDecoder.DECODER_VERSION
 const PROFILE_ID := "sk-s3-lockon-4m-sha256-fba0677f"
 const SOURCE_SHA256 := "fba0677fde9f76df93f3e98d6310d8af68b9847bde16e253d73cd4dd8134ed23"
 const SCHEMA_VERSION := 1
@@ -110,8 +112,8 @@ static func import_aiz_intro(image_bytes: PackedByteArray) -> Dictionary:
 
 
 ## Reopen only fingerprint-verified local generated tiles; never load the ROM from cache.
-static func load_aiz_intro_cache() -> Dictionary:
-	return _read_cache(ProjectSettings.globalize_path(_cache_path()), _cache_path(), SOURCE_SHA256)
+static func load_aiz_intro_cache(expected_manifest_sha256: String = "") -> Dictionary:
+	return _read_cache(ProjectSettings.globalize_path(_cache_path()), _cache_path(), SOURCE_SHA256, expected_manifest_sha256)
 
 
 static func _cache_path() -> String:
@@ -122,6 +124,7 @@ static func _make_manifest(source_hash: String, atlases: Array[Image], outputs: 
 	return {
 		"schema_version": SCHEMA_VERSION,
 		"importer_version": IMPORTER_VERSION,
+		"decoder_version": DECODER_VERSION,
 		"profile_id": PROFILE_ID,
 		"source_sha256": source_hash,
 		"resources": [
@@ -149,8 +152,26 @@ static func _make_manifest(source_hash: String, atlases: Array[Image], outputs: 
 	}
 
 
-static func _read_cache(absolute_root: String, user_root: String, source_hash: String) -> Dictionary:
+## A legacy schema-1/1 manifest predates the explicit decoder version field;
+## its version is inferred and flagged rather than silently represented as verified.
+static func _verify_cache_provenance(manifest: Dictionary, source_hash: String) -> Dictionary:
+	if typeof(manifest.get("schema_version")) not in [TYPE_INT, TYPE_FLOAT] or typeof(manifest.get("importer_version")) not in [TYPE_INT, TYPE_FLOAT]:
+		return _failure("Texture cache has invalid schema or importer metadata.")
+	if manifest["schema_version"] != SCHEMA_VERSION or manifest["importer_version"] != IMPORTER_VERSION:
+		return _failure("Texture cache uses a different schema or importer version.")
+	if manifest.get("profile_id") != PROFILE_ID or manifest.get("source_sha256") != source_hash or source_hash != SOURCE_SHA256:
+		return _failure("Texture cache belongs to a different ROM profile.")
+	var legacy_inference := not manifest.has("decoder_version")
+	if not legacy_inference and (typeof(manifest["decoder_version"]) not in [TYPE_INT, TYPE_FLOAT] or manifest["decoder_version"] != DECODER_VERSION):
+		return _failure("Texture cache decoder version mismatch.")
+	return {"ok": true, "decoder_version": DECODER_VERSION, "legacy_decoder_version_inferred": legacy_inference}
+
+
+static func _read_cache(absolute_root: String, user_root: String, source_hash: String, expected_manifest_sha256: String = "") -> Dictionary:
 	var manifest_path := absolute_root.path_join("manifest.json")
+	var actual_manifest_sha256 := _hash_file(manifest_path)
+	if not expected_manifest_sha256.is_empty() and (expected_manifest_sha256.length() != 64 or actual_manifest_sha256 != expected_manifest_sha256):
+		return _failure("Texture cache manifest fingerprint mismatch.")
 	var manifest_file := FileAccess.open(manifest_path, FileAccess.READ)
 	if manifest_file == null:
 		return _failure("Texture cache manifest is missing or unreadable.")
@@ -162,10 +183,9 @@ static func _read_cache(absolute_root: String, user_root: String, source_hash: S
 	if not parsed.data is Dictionary:
 		return _failure("Texture cache manifest has an invalid root value.")
 	var manifest: Dictionary = parsed.data
-	if manifest.get("schema_version") != SCHEMA_VERSION or manifest.get("importer_version") != IMPORTER_VERSION:
-		return _failure("Texture cache uses a different schema or importer version.")
-	if manifest.get("profile_id") != PROFILE_ID or manifest.get("source_sha256") != source_hash:
-		return _failure("Texture cache belongs to a different ROM profile.")
+	var provenance: Dictionary = _verify_cache_provenance(manifest, source_hash)
+	if not provenance.get("ok", false):
+		return provenance
 	var resources: Variant = manifest.get("resources", null)
 	if not resources is Array or resources.size() != 2:
 		return _failure("Texture cache does not list both AIZ tile atlases.")
@@ -179,6 +199,11 @@ static func _read_cache(absolute_root: String, user_root: String, source_hash: S
 		var resource: Dictionary = resources[index]
 		if resource.get("id") != expected_ids[index] or resource.get("path") != expected_paths[index] or resource.get("type") != "image/png":
 			return _failure("Texture cache resource index does not match the expected AIZ proof.")
+		for number in ["width", "height", "tile_count", "decoded_bytes"]:
+			if typeof(resource.get(number)) not in [TYPE_INT, TYPE_FLOAT] or float(resource[number]) <= 0.0 or float(resource[number]) != float(int(resource[number])):
+				return _failure("Texture cache resource dimensions or tile metadata are invalid.")
+		if int(resource["tile_count"]) * 32 != int(resource["decoded_bytes"]):
+			return _failure("Texture cache resource tile count does not match decoded bytes.")
 		var relative_path := str(resource["path"])
 		if relative_path.is_absolute_path() or relative_path.contains(".."):
 			return _failure("Texture cache contains an unsafe output path.")
@@ -202,6 +227,14 @@ static func _read_cache(absolute_root: String, user_root: String, source_hash: S
 		"secondary_bytes": verified[1]["decoded_bytes"],
 		"palette_line": 0,
 		"manifest_path": user_root.path_join("manifest.json"),
+		"manifest_sha256": actual_manifest_sha256,
+		"profile_id": PROFILE_ID,
+		"source_sha256": source_hash,
+		"schema_version": SCHEMA_VERSION,
+		"importer_version": IMPORTER_VERSION,
+		"decoder_version": provenance["decoder_version"],
+		"legacy_decoder_version_inferred": provenance["legacy_decoder_version_inferred"],
+		"resource_manifest": verified.duplicate(true),
 	}
 
 

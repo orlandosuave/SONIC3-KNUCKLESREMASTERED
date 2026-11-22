@@ -4,6 +4,7 @@ extends RefCounted
 ## Original-coordinate terrain data. No engine objects, cache writes or emulation.
 const Decoder = preload("res://scripts/rom/rom_data_decoder.gd")
 const Inspector = preload("res://scripts/rom/rom_inspector.gd")
+const DECODER_VERSION := 1
 
 
 static func word(data: PackedByteArray, offset: int) -> int:
@@ -70,6 +71,7 @@ static func decode_aiz_main(rom: PackedByteArray) -> Dictionary:
 	result["rotated_heights"] = rom.slice(0x97100, 0x98100)
 	result["angles"] = rom.slice(0x96000, 0x96100)
 	result["schema_version"] = 1
+	result["decoder_version"] = DECODER_VERSION
 	result["variant"] = "aiz_main_static"
 	return result
 
