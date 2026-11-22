@@ -168,6 +168,9 @@ func _aiz_error(message: String) -> void:
 	push_warning("AIZ slice: " + message)
 
 
+# Bounded source-ROM height samples form a visual polygon, not original sensor parity.
+# Ceiling/left-wall contacts, path transitions, DMA/water and full-act G1/G2
+# remain unverified; do not treat this demo as a faithful collision replay.
 func _ground_from_rom(bundle: Dictionary) -> Dictionary:
 	var points := PackedVector2Array()
 	var flat_count := 0
