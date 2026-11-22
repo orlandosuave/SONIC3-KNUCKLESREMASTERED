@@ -52,8 +52,14 @@ static func _height(bundle: Dictionary, point: Vector2i, path: int, angle: int) 
 	var shape: int = indexes[block_id]
 	if shape == 0:
 		return result
+	var angle_data: Variant = bundle.get("angles")
+	if not angle_data is PackedByteArray:
+		return {"ok": false, "error": "Invalid collision angles."}
+	var angles: PackedByteArray = angle_data
+	if shape >= angles.size():
+		return {"ok": false, "error": "Missing collision angle."}
 	var column := point.x & 15
-	angle = int(bundle["angles"][shape])
+	angle = int(angles[shape])
 	if entry & 1024:
 		column = 15 - column
 		angle = -angle
