@@ -31,6 +31,33 @@ func _initialize() -> void:
 	var empty := Collision._height(collision_bundle, Vector2i.ZERO, 0, 0)
 	assert(empty["ok"] and empty["height"] == 0 and empty["block_id"] == 0)
 	print("PASS: empty block preserves height zero")
+	var probe_chunks := PackedByteArray()
+	probe_chunks.resize(128)
+	var probe_bundle := {
+		"ok": true, "foreground": {"width_chunks": 1, "height_chunks": 1, "rows": [PackedByteArray([0])]},
+		"chunks": probe_chunks}
+	for active_path in [0, 1]:
+		var floor_probe := Collision.find_floor(probe_bundle, Vector2i(1, 1), active_path, 77)
+		var wall_probe := Collision.find_right_wall(probe_bundle, Vector2i(1, 1), active_path, 77)
+		assert(floor_probe["ok"] and floor_probe["distance"] == 30 and floor_probe["angle"] == 77)
+		assert(wall_probe["ok"] and wall_probe["distance"] == 30 and wall_probe["angle"] == 77)
+	print("PASS: valid floor and right-wall paths preserve neighbor distance and angle")
+	for invalid_flag in [null, false, 1, "true"]:
+		var invalid_bundle := probe_bundle.duplicate(true)
+		invalid_bundle["ok"] = invalid_flag
+		var rejected_floor := Collision.find_floor(invalid_bundle, Vector2i(1, 1))
+		var rejected_wall := Collision.find_right_wall(invalid_bundle, Vector2i(1, 1))
+		assert(not rejected_floor["ok"] and rejected_floor.has("error"))
+		assert(not rejected_wall["ok"] and rejected_wall.has("error"))
+	var missing_flag := probe_bundle.duplicate(true)
+	missing_flag.erase("ok")
+	assert(not Collision.find_floor(missing_flag, Vector2i(1, 1))["ok"])
+	assert(not Collision.find_right_wall(missing_flag, Vector2i(1, 1))["ok"])
+	print("PASS: both public probes reject malformed, missing and false success flags")
+	for invalid_path in [-1, 2]:
+		var rejected_height := Collision._height(probe_bundle, Vector2i.ZERO, invalid_path, 0)
+		assert(not rejected_height["ok"] and rejected_height.has("error"))
+	print("PASS: internal floor height rejects invalid collision paths")
 	var wall_chunks := PackedByteArray()
 	wall_chunks.resize(256)
 	var rotated := PackedByteArray()

@@ -7,6 +7,8 @@ const Terrain = preload("res://scripts/rom/rom_terrain_decoder.gd")
 
 
 static func _height(bundle: Dictionary, point: Vector2i, path: int, angle: int) -> Dictionary:
+	if path not in [0, 1]:
+		return {"ok": false, "error": "Invalid floor collision path."}
 	var foreground: Variant = bundle.get("foreground")
 	if not foreground is Dictionary:
 		return {"ok": false, "error": "Invalid foreground collision layout."}
@@ -190,7 +192,7 @@ static func _neighbor(bundle: Dictionary, point: Vector2i, path: int, angle: int
 
 
 static func find_right_wall(bundle: Dictionary, point: Vector2i, path: int = 0, initial_angle: int = 0) -> Dictionary:
-	if path not in [0, 1] or not bundle.get("ok", false):
+	if path not in [0, 1] or typeof(bundle.get("ok")) != TYPE_BOOL or bundle.get("ok") != true:
 		return {"ok": false, "error": "Invalid terrain collision path."}
 	var result := _wall_height(bundle, point, path, initial_angle)
 	if not result["ok"]:
@@ -211,7 +213,7 @@ static func find_right_wall(bundle: Dictionary, point: Vector2i, path: int = 0, 
 
 
 static func find_floor(bundle: Dictionary, point: Vector2i, path: int = 0, initial_angle: int = 0) -> Dictionary:
-	if path not in [0, 1] or not bundle.get("ok", false):
+	if path not in [0, 1] or typeof(bundle.get("ok")) != TYPE_BOOL or bundle.get("ok") != true:
 		return {"ok": false, "error": "Invalid terrain collision path."}
 	var result := _height(bundle, point, path, initial_angle)
 	if not result["ok"]:
