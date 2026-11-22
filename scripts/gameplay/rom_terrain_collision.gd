@@ -159,6 +159,21 @@ static func _wall_height(bundle: Dictionary, point: Vector2i, path: int, angle: 
 	result["angle"] = wall_angle & 255
 	return result
 
+static func _wall_neighbor(bundle: Dictionary, point: Vector2i, path: int, angle: int) -> Dictionary:
+	var result := _wall_height(bundle, point, path, angle)
+	if not result["ok"]:
+		return result
+	var height: int = result["height"]
+	var local_x: int = point.x & 15
+	var distance: int = 15 - local_x
+	if height > 0:
+		distance -= height
+	elif height < 0 and height + local_x < 0:
+		distance = -local_x - 1
+	result["distance"] = distance
+	return result
+
+
 static func _neighbor(bundle: Dictionary, point: Vector2i, path: int, angle: int) -> Dictionary:
 	var result := _height(bundle, point, path, angle)
 	if not result["ok"]:
