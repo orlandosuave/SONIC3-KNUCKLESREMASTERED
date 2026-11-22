@@ -17,6 +17,10 @@ func _initialize() -> void:
 	var center := FollowCamera.bounded_center(Vector2(99999, 99999), Vector2(frame.size), bounds)
 	assert(center == bounds.get_center())
 	print("PASS: AIZ 32:9 framing bounds both flat and uphill ROM-sampled terrain")
+	assert(AizPreview.NEXT_ROUTE_FIRST_X == AizPreview.ROUTE_LAST_X)
+	assert(AizPreview.NEXT_ROUTE_LAST_VERIFIED_X - AizPreview.NEXT_ROUTE_FIRST_X <= 256)
+	assert(AizPreview.NEXT_ROUTE_LAST_VERIFIED_X == 7480)
+	print("PASS: follow-up AIZ route stops before unsupported ground at x7488")
 	var collision_bundle := {
 		"foreground": {"width_chunks": 1, "height_chunks": 1, "rows": [PackedByteArray([0])]},
 		"chunks": PackedByteArray([0, 0])

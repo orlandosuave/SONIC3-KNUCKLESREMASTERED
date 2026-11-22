@@ -10,6 +10,11 @@ const Camera = preload("res://scripts/gameplay/prototype_camera.gd")
 const AIZ_REGION := Rect2i(6816, 888, 576, 162)
 const ROUTE_FIRST_X := 6880
 const ROUTE_LAST_X := 7264
+# Local supported-ROM 8px ground scan verifies x7264..7480 at y975..978.
+# x7488..7552 lacks primary-floor samples; never bridge that unknown gap.
+# This is only the next bounded proposal, not an extended playable route.
+const NEXT_ROUTE_FIRST_X := ROUTE_LAST_X
+const NEXT_ROUTE_LAST_VERIFIED_X := 7480
 
 var _menu_background: ColorRect
 var _menu_frame: Control
