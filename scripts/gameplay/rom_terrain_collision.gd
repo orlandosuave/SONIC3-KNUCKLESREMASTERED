@@ -231,3 +231,41 @@ static func find_floor(bundle: Dictionary, point: Vector2i, path: int = 0, initi
 	else:
 		result["distance"] = 15 - local_y - height
 	return result
+
+
+## Source-sampled route reachability preflight, not a player-motion or original ROM trace.
+## Reject discontinuities and absent floor tiles rather than bridging a collision gap.
+static func sample_bounded_floor_route(bundle: Dictionary, first_x: int, last_x: int, scan_top: int, scan_bottom: int, stride: int = 8, path: int = 0) -> Dictionary:
+	if bundle.get("ok") != true or path not in [0, 1]:
+		return {"ok": false, "error": "Invalid route bundle or collision path."}
+	if stride <= 0 or stride > 16 or first_x < 0 or last_x <= first_x or scan_top < 0 or scan_bottom <= scan_top:
+		return {"ok": false, "error": "Invalid bounded route dimensions."}
+	if (last_x - first_x) % stride != 0 or last_x - first_x > 2048 or scan_bottom - scan_top > 512:
+		return {"ok": false, "error": "Unbounded or unaligned route sampling."}
+	var points := PackedVector2Array()
+	var flats := 0
+	var slopes := 0
+	for x in range(first_x, last_x + 1, stride):
+		var surface_y := -1
+		var surface_angle := -1
+		for y in range(scan_top, scan_bottom + 1, stride):
+			var sample: Dictionary = find_floor(bundle, Vector2i(x, y), path, 0)
+			if not sample.get("ok", false) or int(sample.get("height", 0)) <= 0 or not sample.has("distance"):
+				continue
+			var distance: int = int(sample["distance"])
+			if absi(distance) > 16:
+				continue
+			var candidate := y + distance
+			if surface_y < 0 or candidate < surface_y:
+				surface_y = candidate
+				surface_angle = int(sample.get("angle", 0))
+		if surface_y < 0:
+			return {"ok": false, "error": "Missing floor sample.", "blocked_x": x}
+		if not points.is_empty() and absf(float(surface_y) - points[-1].y) > float(stride):
+			return {"ok": false, "error": "Discontinuous floor sample.", "blocked_x": x}
+		points.append(Vector2(x, surface_y))
+		if surface_angle == 248:
+			slopes += 1
+		elif surface_angle == 1 or surface_angle == 255:
+			flats += 1
+	return {"ok": true, "points": points, "flat_samples": flats, "slope_samples": slopes, "start_x": first_x, "end_x": last_x}
