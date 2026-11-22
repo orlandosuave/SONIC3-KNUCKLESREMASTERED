@@ -93,7 +93,7 @@ Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.
 
 **Goal:** deliver one polished act from title/start through completion, proving the importer, movement, camera, and user experience together.
 
-**Status:** 4A research is in progress; gameplay implementation has not started. The [Phase 4 plan](PHASE_4_PLAN.md) defines eight work packages and five delivery gates. The [content audit](PHASE_4_CONTENT_AUDIT.md) records the combined-ROM resource matches, first-map object census, coverage ledger, reference-capture procedure and decision log. Player-facing AIZ Act 1 requires part of the second internal map; route reachability, full resource schemas and detour decisions remain open before G0 closes.
+**Status:** 4A research and a bounded ROM-derived AIZ visual/playable-slice implementation are in progress. A 5120 x 1440 offscreen frame and focused terrain/display checks are accepted at synthetic/preview scope, but original act-route, panoramic art fidelity and gameplay parity are not verified. The [Phase 4 plan](PHASE_4_PLAN.md) defines eight work packages and five delivery gates. The [content audit](PHASE_4_CONTENT_AUDIT.md) records the combined-ROM resource matches, first-map object census, coverage ledger, reference-capture procedure and decision log. Player-facing AIZ Act 1 requires part of the second internal map; route reachability, full resource schemas and detour decisions remain open before G0 closes.
 
 - [ ] Build one complete act with traversal, checkpoint, set piece/boss, and completion flow.
 - [ ] Record the Windows hardware baseline and benchmark 60 FPS at 1920×1080 and 5120×1440 (carried from Stage 3 prototype closeout).
@@ -104,6 +104,8 @@ Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.
 - [ ] Validate at 16:9 and native 32:9.
 
 **Exit criteria:** a new player can finish the act; restart/resume works; the documented baseline sustains 60 FPS.
+
+**2026-11-22 ultrawide review checkpoint:** native 32:9 preview has full-frame output and sampled ROM-derived tiles but substantial dark background gaps, checker-like seams and debug overlays. This is not yet the owner's finished 5120 x 1440 composition. See [the content audit](PHASE_4_CONTENT_AUDIT.md); route reachability and source-faithful visual repair are next. G0/G1/G2 remain open.
 
 ### Stage 5 — SMB1R-style editor, packs, and replay modes
 
