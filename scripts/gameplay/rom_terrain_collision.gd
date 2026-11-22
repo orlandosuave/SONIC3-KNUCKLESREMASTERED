@@ -7,7 +7,14 @@ const Terrain = preload("res://scripts/rom/rom_terrain_decoder.gd")
 
 
 static func _height(bundle: Dictionary, point: Vector2i, path: int, angle: int) -> Dictionary:
-	var layer: Dictionary = bundle["foreground"]
+	var foreground: Variant = bundle.get("foreground")
+	if not foreground is Dictionary:
+		return {"ok": false, "error": "Invalid foreground collision layout."}
+	var layer: Dictionary = foreground
+	if not layer.has("width_chunks") or not layer.has("height_chunks"):
+		return {"ok": false, "error": "Missing collision layout dimensions."}
+	if not layer["width_chunks"] is int or not layer["height_chunks"] is int or layer["width_chunks"] <= 0 or layer["height_chunks"] <= 0:
+		return {"ok": false, "error": "Invalid collision layout dimensions."}
 	if point.x < 0 or point.y < 0 or point.x >= int(layer["width_chunks"]) * 128 or point.y >= int(layer["height_chunks"]) * 128:
 		return {"ok": false, "error": "Probe outside validated layout bounds."}
 	var row: PackedByteArray = layer["rows"][point.y / 128]
