@@ -60,6 +60,10 @@ func _initialize() -> void:
 		assert(not Collision.find_floor(probe_bundle, Vector2i.ZERO, invalid_path)["ok"])
 		assert(not Collision.find_right_wall(probe_bundle, Vector2i.ZERO, invalid_path)["ok"])
 	print("PASS: internal and public floor/right-wall probes reject invalid collision paths")
+	for invalid_wall_path in [-1, 2]:
+		var rejected_wall_height := Collision._wall_height(probe_bundle, Vector2i.ZERO, invalid_wall_path, 0)
+		assert(not rejected_wall_height["ok"] and rejected_wall_height.has("error"))
+	print("PASS: private wall height rejects invalid paths without runtime errors")
 	var positive_heights := PackedByteArray()
 	positive_heights.resize(32)
 	positive_heights[18] = 8
