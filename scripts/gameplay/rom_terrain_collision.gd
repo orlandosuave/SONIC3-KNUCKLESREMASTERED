@@ -141,14 +141,22 @@ static func _wall_height(bundle: Dictionary, point: Vector2i, path: int, angle: 
 	if not rotated_data is PackedByteArray:
 		return {"ok": false, "error": "Invalid rotated collision heights."}
 	var rotated: PackedByteArray = rotated_data
-	var height_index: int = shape * 16 + (point.y & 15)
+	var local_row: int = point.y & 15
+	var wall_angle: int = int(angles[shape])
+	if entry & 2048:
+		local_row = 15 - local_row
+		wall_angle = -wall_angle - 128
+	var height_index: int = shape * 16 + local_row
 	if height_index >= rotated.size():
 		return {"ok": false, "error": "Missing rotated collision sample."}
 	var height: int = rotated[height_index]
 	if height >= 128:
 		height -= 256
+	if entry & 1024:
+		height = -height
+		wall_angle = -wall_angle
 	result["height"] = height
-	result["angle"] = int(angles[shape]) & 255
+	result["angle"] = wall_angle & 255
 	return result
 
 static func _neighbor(bundle: Dictionary, point: Vector2i, path: int, angle: int) -> Dictionary:
