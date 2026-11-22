@@ -1,5 +1,7 @@
 # Phase 4 — First complete vertical slice
 
+**2026-11-22 queue extension — reference-scale and original audio:** The owner requires the 5120x1440 Angel Island world to match the supplied 32:9 screenshot's relative scale for Sonic, trees/palms, star posts, rings and other objects, not merely fill the viewport. The operator queue now includes screenshot-scale implementation/review, original-ROM music/SFX ID audit, private extraction, FM/PSG/DAC playback qualification, sound-driver scheduling (priority/interruptions/fades), scene music and gameplay SFX triggers, and audio reference QA. The work is queued, **not implemented or fidelity-certified**. See [Audio and screenshot-scale queue plan](PHASE_4_AUDIO_AND_SCALE_QUEUE.md).
+
 **Status: In progress — 4A content/fidelity audit started 2026-11-14.** Started on `codex/phase-3-display`, based on `554fca9`. This plan expands Stage 4 of [the roadmap](ROADMAP.md) and preserves [the project's original-game fidelity requirement](PROJECT_SCOPE.md). See the [content audit and coverage ledger](PHASE_4_CONTENT_AUDIT.md). Gameplay implementation has not started; G0 remains open.
 
 ## Outcome and proposed boundary

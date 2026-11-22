@@ -1,5 +1,7 @@
 # Project Roadmap and Stage Tracker
 
+**2026-11-22 Phase 4 queue expansion:** Add an explicit screenshot-relative 32:9 scenery/object scale gate before full-world ultrawide acceptance, plus original ROM-derived soundtrack/SFX playback and their sound-driver event, priority and transition logic. Fifty dependency-gated task records were added to the operator queue (ten bundles, each with implementation, verification, review, dormant recovery and follow-up). They are planned work, not completed gameplay/audio features. See [Audio and screenshot-scale queue plan](PHASE_4_AUDIO_AND_SCALE_QUEUE.md).
+
 This file is the stage-level source of truth for the project. It lives in the GitHub repository, so each status change is recorded in the commit history. Detailed product requirements remain in [PROJECT_SCOPE.md](PROJECT_SCOPE.md); technical reference findings are in [REFERENCE_ANALYSIS.md](REFERENCE_ANALYSIS.md).
 
 ## Current stage
