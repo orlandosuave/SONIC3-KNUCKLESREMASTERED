@@ -17,8 +17,20 @@ static func _height(bundle: Dictionary, point: Vector2i, path: int, angle: int) 
 		return {"ok": false, "error": "Invalid collision layout dimensions."}
 	if point.x < 0 or point.y < 0 or point.x >= int(layer["width_chunks"]) * 128 or point.y >= int(layer["height_chunks"]) * 128:
 		return {"ok": false, "error": "Probe outside validated layout bounds."}
-	var row: PackedByteArray = layer["rows"][point.y / 128]
-	var chunk_id: int = row[point.x / 128]
+	var rows: Variant = layer.get("rows")
+	if not rows is Array:
+		return {"ok": false, "error": "Invalid collision layout rows."}
+	var row_index: int = point.y / 128
+	if row_index >= rows.size():
+		return {"ok": false, "error": "Missing collision layout row."}
+	var selected_row: Variant = rows[row_index]
+	if not selected_row is PackedByteArray:
+		return {"ok": false, "error": "Invalid collision layout row."}
+	var row: PackedByteArray = selected_row
+	var column_index: int = point.x / 128
+	if column_index >= row.size():
+		return {"ok": false, "error": "Missing collision layout column."}
+	var chunk_id: int = row[column_index]
 	var offset := chunk_id * 128 + ((point.y % 128) / 16 * 8 + (point.x % 128) / 16) * 2
 	var chunks: PackedByteArray = bundle["chunks"]
 	if offset + 2 > chunks.size():
