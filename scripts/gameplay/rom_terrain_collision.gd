@@ -32,7 +32,10 @@ static func _height(bundle: Dictionary, point: Vector2i, path: int, angle: int) 
 		return {"ok": false, "error": "Missing collision layout column."}
 	var chunk_id: int = row[column_index]
 	var offset := chunk_id * 128 + ((point.y % 128) / 16 * 8 + (point.x % 128) / 16) * 2
-	var chunks: PackedByteArray = bundle["chunks"]
+	var chunk_data: Variant = bundle.get("chunks")
+	if not chunk_data is PackedByteArray:
+		return {"ok": false, "error": "Invalid collision chunks."}
+	var chunks: PackedByteArray = chunk_data
 	if offset + 2 > chunks.size():
 		return {"ok": false, "error": "Missing collision chunk."}
 	var entry := Terrain.word(chunks, offset)
