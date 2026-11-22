@@ -107,6 +107,8 @@ Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.
 
 **2026-11-22 ultrawide review checkpoint:** native 32:9 preview has full-frame output and sampled ROM-derived tiles but substantial dark background gaps, checker-like seams and debug overlays. This is not yet the owner's finished 5120 x 1440 composition. See [the content audit](PHASE_4_CONTENT_AUDIT.md); route reachability and source-faithful visual repair are next. G0/G1/G2 remain open.
 
+**2026-11-22 next streaming milestone (not installed as cards):** document source-backed distant/cloud and water layers, confirm VRAM/nametable/palette upload events, then add adjacent 512-pixel ROM-validated streaming and bounded camera movement before independent 5120 x 1440 visual/route comparison. Preserve the exact 2x world scale and coordinate with the already queued p4cam/route/scale milestones. The content audit lists four proposed collision-free IDs and their gates.
+
 ### Stage 5 — SMB1R-style editor, packs, and replay modes
 
 **Goal:** make creation, customization, and replay built-in workflows.
