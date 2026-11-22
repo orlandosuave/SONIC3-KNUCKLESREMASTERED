@@ -24,6 +24,31 @@ func _initialize() -> void:
 	assert(AizPreview._aiz_zoom_for_viewport(Vector2(1600, 450)) == Vector2(0.625, 0.625))
 	assert(Vector2(AizPreview.TARGET_DISPLAY_SIZE) == Vector2(AizPreview.AIZ_REGION.size) * AizPreview.WORLD_PIXEL_SCALE)
 	print("PASS: 5120x1440 covers 2560x720 source world at 2x with no stretch")
+	# Independent coordinate-edge regression: all four source corners must
+	# project inside the full native frame, never onto a repeated/cropped strip.
+	var source_corners: Array[Vector2i] = [
+		frame.position,
+		frame.position + Vector2i(frame.size.x - 1, 0),
+		frame.position + Vector2i(0, frame.size.y - 1),
+		frame.end - Vector2i.ONE
+	]
+	for corner in source_corners:
+		assert(frame.has_point(corner))
+		var projected: Vector2i = (corner - frame.position) * 2
+		assert(projected.x >= 0 and projected.x < 5120)
+		assert(projected.y >= 0 and projected.y < 1440)
+	assert(not frame.has_point(frame.end))
+	# On non-32:9 displays, zoom is uniform: never stretch a world pixel
+	# or make a false claim that a physical 5120x1440 monitor exists.
+	assert(AizPreview._is_native_ultrawide_screen(Vector2i(5120, 1440)))
+	assert(not AizPreview._is_native_ultrawide_screen(Vector2i(1600, 450)))
+	assert(not AizPreview._is_native_ultrawide_screen(Vector2i(1536, 864)))
+	assert(not AizPreview._is_native_ultrawide_screen(Vector2i(3840, 1080)))
+	var small_zoom := AizPreview._aiz_zoom_for_viewport(Vector2(1536, 864))
+	assert(is_equal_approx(small_zoom.x, small_zoom.y))
+	assert(is_equal_approx(small_zoom.x, 0.6))
+	assert((Vector2(1536, 864) / small_zoom).is_equal_approx(Vector2(2560, 1440)))
+	print("AIZ_32_9_EDGE_MAPPING_AND_FALLBACK_PASS")
 	_test_tile_palette_flips_priority()
 	assert(AizPreview.NEXT_ROUTE_FIRST_X == AizPreview.ROUTE_LAST_X)
 	assert(AizPreview.NEXT_ROUTE_LAST_VERIFIED_X - AizPreview.NEXT_ROUTE_FIRST_X <= 256)
