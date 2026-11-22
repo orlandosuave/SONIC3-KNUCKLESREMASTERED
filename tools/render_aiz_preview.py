@@ -156,11 +156,103 @@ def render(image, variant, layer_name, priority=None, animation_uploads=(), capt
                     "limitations": "Static plane; no scroll deformation, animated uploads, live mutations, objects or water palette. Priority retained in source words but planes not composited. Main includes later fire-art availability."}
 
 
+
+def compare_native_capture(image, native_capture, out_dir, roi=(6600, 900, 800, 240)):
+    """Compare a bounded Godot frame to ROM-decoded *static* planes, not emulator video.
+
+    The target capture has a fixed 5120x1440 viewport at two display pixels
+    per (x,y) world pixel. HUD and the authored Sonic start neighborhood are
+    excluded; static terrain and background pixels are counted separately.
+    """
+    from hashlib import sha256
+    roi_x, roi_y, roi_w, roi_h = roi
+    world_x, world_y = 5760, 560
+    if roi_w <= 0 or roi_h <= 0 or roi_x < world_x or roi_y < world_y:
+        raise ValueError("Invalid comparison bounds")
+    if roi_x + roi_w > world_x + 2560 or roi_y + roi_h > world_y + 720:
+        raise ValueError("Region exceeds native world footprint")
+    with Image.open(native_capture) as opened:
+        if opened.size != (5120, 1440):
+            raise ValueError("Expected a genuine 5120x1440 native preview capture")
+        native = opened.convert("RGB")
+    x0 = (roi_x-world_x)*2
+    y0 = (roi_y-world_y)*2
+    capture = native.crop((x0, y0, x0+roi_w*2, y0+roi_h*2))
+    reference_bg, background_info = render(image, "main", "background")
+    reference_fg, foreground_info = render(image, "main", "foreground")
+    expected_bg = reference_bg.crop((roi_x, roi_y, roi_x+roi_w, roi_y+roi_h))
+    expected_fg = reference_fg.crop((roi_x, roi_y, roi_x+roi_w, roi_y+roi_h))
+    composed = Image.new("RGBA", (roi_w, roi_h), (16, 24, 39, 255))
+    composed.alpha_composite(expected_bg)
+    composed.alpha_composite(expected_fg)
+    expected = composed.convert("RGB").resize((roi_w*2, roi_h*2), Image.Resampling.NEAREST)
+    fg_alpha = expected_fg.getchannel("A")
+    bg_alpha = expected_bg.getchannel("A")
+    exp_pixels = expected.load()
+    cap_pixels = capture.load()
+    fg_pixels, bg_pixels = fg_alpha.load(), bg_alpha.load()
+    counts = {"foreground_terrain": {"total":0,"matched":0},
+              "background_only": {"total":0,"matched":0},
+              "empty_static_plane": {"total":0,"matched":0},
+              "player_region_excluded": {"total":0,"matched":0}}
+    diff = Image.new("RGB", expected.size, (0, 0, 0))
+    dp = diff.load()
+    for y in range(roi_h*2):
+        for x in range(roi_w*2):
+            wx, wy = roi_x+x//2, roi_y+y//2
+            # Original authoring starts Sonic at (6904,1007); the capture may
+            # also show animated character and HUD, not part of static planes.
+            if 6856 <= wx < 6968 and 930 <= wy < 1050:
+                key="player_region_excluded"
+            elif fg_pixels[x//2, y//2] > 0:
+                key="foreground_terrain"
+            elif bg_pixels[x//2, y//2] > 0:
+                key="background_only"
+            else:
+                key="empty_static_plane"
+            counts[key]["total"] += 1
+            a, b = cap_pixels[x,y], exp_pixels[x,y]
+            if a==b:
+                counts[key]["matched"] += 1
+            else:
+                dp[x,y] = tuple(abs(a[k]-b[k]) for k in range(3))
+    output=Path(out_dir)
+    output.mkdir(parents=True,exist_ok=True)
+    captures={"godot_crop.png":capture,"rom_static_reference.png":expected,"pixel_difference.png":diff}
+    for name, im in captures.items():
+        im.save(output/name)
+    preview=Image.new("RGB",(1200,280),(24,30,40))
+    draw=ImageDraw.Draw(preview)
+    for i,(name,im) in enumerate(captures.items()):
+        small=im.resize((400,240),Image.Resampling.NEAREST)
+        preview.paste(small,(i*400,30))
+        draw.text((i*400+8,8),name,fill=(255,255,255))
+    preview.save(output/"comparison_panel.png")
+    fingerprint=lambda p:sha256(Path(p).read_bytes()).hexdigest()
+    result={"source":"supported-ROM static plane decoder, main variant",
+            "source_sha256":sha256(image).hexdigest(),
+            "capture_file":str(Path(native_capture).resolve()),
+            "capture_sha256":fingerprint(native_capture),
+            "native_size":[5120,1440],"source_world_origin":[world_x,world_y],
+            "source_region":list(roi),"display_pixel_scale":2,
+            "pixel_groups":counts,"reference_layer_metadata":{"foreground":foreground_info,"background":background_info},
+            "artifacts":[{"path":str(output/n),"sha256":fingerprint(output/n)} for n in [*captures,"comparison_panel.png"]],
+            "interpretation":"Static ROM tile snapshot versus local Godot capture, not original game/emulator frame. Sprite region excluded. Water palette, dynamic nametable and VRAM updates, HUD, moving objects and noncaptured source state prevent parity certification."}
+    (output/"comparison-report.json").write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8")
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("rom", type=Path)
+    parser.add_argument("--compare-native", type=Path, help="Use a local 5120x1440 Godot capture for bounded source comparison")
     args = parser.parse_args()
     image = audit.read_image(args.rom)
+    if args.compare_native is not None:
+        output = Path(os.environ["LOCALAPPDATA"]) / "S3KRemastered" / "research" / "aiz-native-compare"
+        report = compare_native_capture(image, args.compare_native, output)
+        print(json.dumps({"output": str(output), "source_region": report["source_region"], "pixel_groups": report["pixel_groups"], "report": str(output/"comparison-report.json")}, indent=2))
+        return
     output = Path(os.environ["LOCALAPPDATA"]) / "S3KRemastered" / "research" / "aiz-static"
     output.mkdir(parents=True, exist_ok=True)
     reports = []
