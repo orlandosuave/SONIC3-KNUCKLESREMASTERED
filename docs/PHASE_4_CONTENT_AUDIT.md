@@ -229,3 +229,13 @@ Checkpoint replay reproduced 21/21 images, but transient RAM differences mean un
 `python tools/validate_aiz_water.py <supported-ROM>` checks the dense dataset: **39 visible-water frames, 17,472 scroll words, zero differences** against uploaded VRAM scroll data. The independently rendered frame 3600 improves from 1,804 to 59 mismatches outside sprite bounds. All 59 remaining pixels share one normal-versus-water color difference. Original `HInt3` transfers water colors in three-entry groups with deliberate cycle delays, so exact palette staging needs a scanline-aware model. A whole-frame palette substitution is not an acceptable fix.
 
 The comparison now separates modeled water scroll from unvalidated underwater palette behavior. Fully submerged camera entry remains explicitly unsupported. Persistent background nametable updates during the intro transition remain open. All 29 Python tests pass. No gameplay code or gate status changed.
+
+### Phase 4C collision chunk-span synthetic review — 2026-11-21
+
+The isolated Phase 4 queue accepted `p4c03-impl-01` at `f7ba9ac0043320cf65b07854e8fe3860e95d315f` and `p4c03-verify-01` at `98b8a357ad24df56dd6156a188b754f0343a3de0`. The actual terrain test (`tests/rom/test_rom_terrain.gd`) calls the production `RomTerrainCollision._height`, not a replacement decoder.
+
+The persistent synthetic cases check: missing `chunks` returns `ok:false`; an incorrect chunks buffer type returns `ok:false`; a one-byte-short word returns `ok:false`; the final complete two-byte word at nonzero offset succeeds; and an empty block preserves height zero. The independent Godot collision oracle verifies the same behavioral boundaries, while the existing native terrain decoder synthetic regression remains green.
+
+The two accepted task receipts at `D:/AI/SonicPhase4Queue/runs/p4c03-impl-01/chatgpt-01/acceptance-receipt.json` and `D:/AI/SonicPhase4Queue/runs/p4c03-verify-01/chatgpt-01/acceptance-receipt.json` contain SHA-256 checksums for the source, parser/regression/oracle logs, diffs and candidate commits. The review independently recalculated all seven evidence-file hashes for each receipt with zero mismatches. Both tasks report Godot 4.7 parser, terrain regression and independent oracle exit code 0 with required positive sentinels.
+
+**Limit:** this is synthetic, source-informed collision-buffer coverage only. No original-ROM contact-probe trace parity has been established; Phase 4C and the G1/G2 fidelity gates remain open. A supported-ROM reference trace and matching runtime probes are still required before fidelity or gameplay-completion claims.
