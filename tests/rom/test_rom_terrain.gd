@@ -70,6 +70,35 @@ func _initialize() -> void:
 	seam = Collision.find_right_wall(wall_bundle, Vector2i(255, 5))
 	assert(not seam["ok"] and seam.has("error"))
 	print("PASS: outer wall layout boundary returns structured error")
+	var flip_rows := PackedByteArray()
+	flip_rows.resize(32)
+	flip_rows[21] = 250
+	flip_rows[26] = 9
+	var flip_bundle := {
+		"ok": true, "foreground": {"width_chunks": 1, "height_chunks": 1, "rows": [PackedByteArray([0])]},
+		"chunks": PackedByteArray([0x20, 0x01]), "collision_primary": PackedByteArray([0, 1]),
+		"angles": PackedByteArray([0, 250]), "rotated_heights": flip_rows}
+	var flipped := Collision._wall_height(flip_bundle, Vector2i(2, 5), 0, 0)
+	assert(flipped["ok"] and flipped["height"] == -6 and flipped["angle"] == 250)
+	print("PASS: signed rotated right-wall height byte")
+	flip_bundle["chunks"] = PackedByteArray([0x28, 0x01])
+	flipped = Collision._wall_height(flip_bundle, Vector2i(2, 5), 0, 0)
+	assert(flipped["ok"] and flipped["height"] == 9)
+	print("PASS: Y flip selects nonuniform rotated row")
+	assert(flipped["angle"] == 134)
+	print("PASS: Y-flipped wall angle wraps to byte")
+	flip_bundle["chunks"] = PackedByteArray([0x24, 0x01])
+	flipped = Collision._wall_height(flip_bundle, Vector2i(2, 5), 0, 0)
+	assert(flipped["ok"] and flipped["height"] == 6 and flipped["angle"] == 6)
+	print("PASS: X flip negates signed right-wall height")
+	flip_bundle["chunks"] = PackedByteArray([0x2C, 0x01])
+	flipped = Collision._wall_height(flip_bundle, Vector2i(2, 5), 0, 0)
+	assert(flipped["ok"] and flipped["height"] == -9 and flipped["angle"] == 122)
+	print("PASS: combined X and Y wall flips maintain operation order")
+	flip_bundle["chunks"] = PackedByteArray([0x10, 0x01])
+	flipped = Collision._wall_height(flip_bundle, Vector2i(2, 5), 0, 99)
+	assert(flipped["ok"] and flipped["height"] == 0 and flipped["angle"] == 99)
+	print("PASS: floor-only collision bit remains ignored by wall probe")
 	var stream := PackedByteArray([0x41, 0, 65, 255, 0, 0, 0])
 	assert(Decoder.decode_kosinski(stream)["data"] == PackedByteArray([65, 65, 65]))
 	for length in range(stream.size()):
