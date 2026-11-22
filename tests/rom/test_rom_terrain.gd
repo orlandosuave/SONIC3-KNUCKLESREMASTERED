@@ -126,6 +126,12 @@ func _initialize() -> void:
 	flipped = Collision._wall_height(flip_bundle, Vector2i(2, 5), 0, 99)
 	assert(flipped["ok"] and flipped["height"] == 0 and flipped["angle"] == 99)
 	print("PASS: floor-only collision bit remains ignored by wall probe")
+	flip_rows[21] = 129
+	flip_bundle["rotated_heights"] = flip_rows
+	flip_bundle["chunks"] = PackedByteArray([0x24, 0x01])
+	flipped = Collision._wall_height(flip_bundle, Vector2i(2, 5), 0, 0)
+	assert(flipped["ok"] and flipped["height"] == 127 and flipped["angle"] == 6)
+	print("PASS: X flip negates near-limit signed rotated byte")
 	var stream := PackedByteArray([0x41, 0, 65, 255, 0, 0, 0])
 	assert(Decoder.decode_kosinski(stream)["data"] == PackedByteArray([65, 65, 65]))
 	for length in range(stream.size()):
