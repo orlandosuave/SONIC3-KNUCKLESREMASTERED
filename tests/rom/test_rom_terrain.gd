@@ -97,6 +97,19 @@ func _initialize() -> void:
 	seam = Collision.find_right_wall(wall_bundle, Vector2i(255, 5))
 	assert(not seam["ok"] and seam.has("error"))
 	print("PASS: outer wall layout boundary returns structured error")
+	wall_chunks[128] = 0x80
+	wall_bundle["chunks"] = wall_chunks
+	var primary_off := Collision._wall_height(wall_bundle, Vector2i(128, 5), 0, 77)
+	var secondary_on := Collision._wall_height(wall_bundle, Vector2i(128, 5), 1, 77)
+	assert(primary_off["ok"] and primary_off["height"] == 0 and primary_off["angle"] == 77)
+	assert(secondary_on["ok"] and secondary_on["height"] == 9 and secondary_on["angle"] == 80)
+	wall_chunks[128] = 0x20
+	wall_bundle["chunks"] = wall_chunks
+	var primary_on := Collision._wall_height(wall_bundle, Vector2i(128, 5), 0, 77)
+	var secondary_off := Collision._wall_height(wall_bundle, Vector2i(128, 5), 1, 77)
+	assert(primary_on["ok"] and primary_on["height"] == 5 and primary_on["angle"] == 40)
+	assert(secondary_off["ok"] and secondary_off["height"] == 0 and secondary_off["angle"] == 77)
+	print("PASS: primary and secondary solidity bits remain independent")
 	var flip_rows := PackedByteArray()
 	flip_rows.resize(32)
 	flip_rows[21] = 250
