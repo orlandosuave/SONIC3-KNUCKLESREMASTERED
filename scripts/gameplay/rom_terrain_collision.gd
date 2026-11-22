@@ -189,6 +189,27 @@ static func _neighbor(bundle: Dictionary, point: Vector2i, path: int, angle: int
 	return result
 
 
+static func find_right_wall(bundle: Dictionary, point: Vector2i, path: int = 0, initial_angle: int = 0) -> Dictionary:
+	if path not in [0, 1] or not bundle.get("ok", false):
+		return {"ok": false, "error": "Invalid terrain collision path."}
+	var result := _wall_height(bundle, point, path, initial_angle)
+	if not result["ok"]:
+		return result
+	var height: int = result["height"]
+	var local_x: int = point.x & 15
+	if height == 0 or (height < 0 and height + local_x >= 0):
+		result = _wall_neighbor(bundle, point + Vector2i(16, 0), path, result["angle"])
+		if result["ok"]:
+			result["distance"] += 16
+	elif height == 16 or height < 0:
+		result = _wall_neighbor(bundle, point - Vector2i(16, 0), path, result["angle"])
+		if result["ok"]:
+			result["distance"] -= 16
+	else:
+		result["distance"] = 15 - local_x - height
+	return result
+
+
 static func find_floor(bundle: Dictionary, point: Vector2i, path: int = 0, initial_angle: int = 0) -> Dictionary:
 	if path not in [0, 1] or not bundle.get("ok", false):
 		return {"ok": false, "error": "Invalid terrain collision path."}
