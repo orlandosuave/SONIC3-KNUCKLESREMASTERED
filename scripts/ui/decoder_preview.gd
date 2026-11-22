@@ -30,10 +30,15 @@ var _aiz_player: PrototypePlayer
 var _aiz_camera: Camera2D
 var _aiz_hud: CanvasLayer
 var _aiz_hud_label: Label
+var _aiz_native_button: Button
+var _aiz_restore_window_mode := -1
+var _aiz_restore_window_screen := -1
+var _aiz_restore_window_size := Vector2i.ZERO
 var _aiz_ground: PackedVector2Array = PackedVector2Array()
 
 
 func _ready() -> void:
+	get_viewport().size_changed.connect(_update_aiz_frame)
 	var background := ColorRect.new()
 	background.color = Color("101827")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -331,6 +336,81 @@ func _build_aiz_hud() -> void:
 	back.offset_top = 12
 	back.offset_bottom = 48
 	back.pressed.connect(_return_to_preview)
+	_aiz_native_button = Button.new()
+	_aiz_native_button.text = "Native 5120 x 1440"
+	_aiz_native_button.tooltip_text = "Fullscreen only on a connected 5120 x 1440 display"
+	_aiz_native_button.disabled = _native_ultrawide_screen() < 0
+	overlay.add_child(_aiz_native_button)
+	_aiz_native_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_aiz_native_button.offset_left = -374
+	_aiz_native_button.offset_right = -174
+	_aiz_native_button.offset_top = 12
+	_aiz_native_button.offset_bottom = 48
+	_aiz_native_button.pressed.connect(_enter_native_ultrawide)
+
+
+# Fullscreen is never selected automatically on a smaller display, and no
+# physical 5120x1440 claim is inferred from an offscreen framebuffer alone.
+static func _is_native_ultrawide_screen(size: Vector2i) -> bool:
+	return size == TARGET_DISPLAY_SIZE
+
+
+func _native_ultrawide_screen() -> int:
+	var current := get_window().current_screen
+	if current >= 0 and current < DisplayServer.get_screen_count() and _is_native_ultrawide_screen(DisplayServer.screen_get_size(current)):
+		return current
+	for index in range(DisplayServer.get_screen_count()):
+		if _is_native_ultrawide_screen(DisplayServer.screen_get_size(index)):
+			return index
+	return -1
+
+
+func _enter_native_ultrawide() -> void:
+	if _aiz_restore_window_mode >= 0:
+		return
+	var screen := _native_ultrawide_screen()
+	if screen < 0:
+		_aiz_error("A native 5120 x 1440 display is not connected. Keeping the current window mode.")
+		return
+	var window := get_window()
+	_aiz_restore_window_mode = window.mode
+	_aiz_restore_window_screen = window.current_screen
+	_aiz_restore_window_size = window.size
+	# Do not reset an already-windowed display just before requesting
+	# fullscreen; that transition can asynchronously minimize the host.
+	if window.current_screen != screen:
+		if window.mode != Window.MODE_WINDOWED:
+			window.mode = Window.MODE_WINDOWED
+		window.current_screen = screen
+		await get_tree().process_frame
+		if _aiz_restore_window_mode < 0 or not is_instance_valid(_aiz_world):
+			return
+	window.mode = Window.MODE_FULLSCREEN
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if _aiz_restore_window_mode < 0 or not is_instance_valid(_aiz_world):
+		return
+	# On Windows the first transition may be superseded by a pending
+	# minimize/windowed event; make at most one bounded retry.
+	if window.mode != Window.MODE_FULLSCREEN:
+		window.mode = Window.MODE_FULLSCREEN
+		await get_tree().process_frame
+	if window.mode != Window.MODE_FULLSCREEN or window.size != TARGET_DISPLAY_SIZE:
+		_restore_aiz_window()
+		_aiz_error("Native 5120 x 1440 fullscreen could not be activated. Window mode restored.")
+		return
+	_update_aiz_frame()
+
+
+func _restore_aiz_window() -> void:
+	if _aiz_restore_window_mode < 0:
+		return
+	var window := get_window()
+	window.mode = Window.MODE_WINDOWED
+	window.current_screen = _aiz_restore_window_screen
+	window.size = _aiz_restore_window_size
+	window.mode = _aiz_restore_window_mode
+	_aiz_restore_window_mode = -1
 
 
 # Scaling the viewport, not stretching Sonic or terrain: a 5120x1440
@@ -366,6 +446,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _return_to_preview() -> void:
+	_restore_aiz_window()
 	if is_instance_valid(_aiz_world):
 		_aiz_world.queue_free()
 	if is_instance_valid(_aiz_hud):
@@ -375,5 +456,6 @@ func _return_to_preview() -> void:
 	_aiz_camera = null
 	_aiz_hud = null
 	_aiz_hud_label = null
+	_aiz_native_button = null
 	_menu_background.show()
 	_menu_frame.show()
