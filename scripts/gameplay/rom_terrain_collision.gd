@@ -65,7 +65,14 @@ static func _height(bundle: Dictionary, point: Vector2i, path: int, angle: int) 
 		angle = -angle
 	if entry & 2048:
 		angle = -angle - 128
-	var height: int = bundle["heights"][shape * 16 + column]
+	var selected_heights: Variant = bundle.get("heights")
+	if not selected_heights is PackedByteArray:
+		return {"ok": false, "error": "Invalid collision heights."}
+	var heights: PackedByteArray = selected_heights
+	var height_index: int = shape * 16 + column
+	if height_index >= heights.size():
+		return {"ok": false, "error": "Missing collision height sample."}
+	var height: int = heights[height_index]
 	if height >= 128:
 		height -= 256
 	if entry & 2048:
