@@ -43,7 +43,10 @@ static func _height(bundle: Dictionary, point: Vector2i, path: int, angle: int) 
 	var result := {"ok": true, "height": 0, "angle": angle, "block_id": block_id}
 	if block_id == 0 or not (entry & (1 << (12 + path * 2))):
 		return result
-	var indexes: PackedByteArray = bundle["collision_primary" if path == 0 else "collision_secondary"]
+	var selected_indexes: Variant = bundle.get("collision_primary" if path == 0 else "collision_secondary")
+	if not selected_indexes is PackedByteArray:
+		return {"ok": false, "error": "Invalid selected collision indexes."}
+	var indexes: PackedByteArray = selected_indexes
 	if block_id >= indexes.size():
 		return {"ok": false, "error": "Missing collision index."}
 	var shape: int = indexes[block_id]
