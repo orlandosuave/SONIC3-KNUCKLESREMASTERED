@@ -105,6 +105,8 @@ Detailed work packages and acceptance checks are in [Phase 1 plan](PHASE_1_PLAN.
 
 **Exit criteria:** a new player can finish the act; restart/resume works; the documented baseline sustains 60 FPS.
 
+**2026-11-22 bounded ultrawide playtest:** an independently captured 5120 x 1440 offscreen OpenGL image verifies 2x world coverage after 127 rightward movement physics ticks, flat/slope traversal and endpoint reachability without teleportation. Native 5120 x 1440 display presence was detected, but physical fullscreen, sustained performance and full-act fidelity remain unverified. See the content audit and playtest metadata for exact hashes and known gaps.
+
 ### Stage 5 — SMB1R-style editor, packs, and replay modes
 
 **Goal:** make creation, customization, and replay built-in workflows.
