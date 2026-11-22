@@ -42,7 +42,7 @@ func _initialize() -> void:
 		assert(floor_probe["ok"] and floor_probe["distance"] == 30 and floor_probe["angle"] == 77)
 		assert(wall_probe["ok"] and wall_probe["distance"] == 30 and wall_probe["angle"] == 77)
 	print("PASS: valid floor and right-wall paths preserve neighbor distance and angle")
-	for invalid_flag in [null, false, 1, "true"]:
+	for invalid_flag in [null, false, 0, 1, "true", [], {}]:
 		var invalid_bundle := probe_bundle.duplicate(true)
 		invalid_bundle["ok"] = invalid_flag
 		var rejected_floor := Collision.find_floor(invalid_bundle, Vector2i(1, 1))
@@ -58,6 +58,30 @@ func _initialize() -> void:
 		var rejected_height := Collision._height(probe_bundle, Vector2i.ZERO, invalid_path, 0)
 		assert(not rejected_height["ok"] and rejected_height.has("error"))
 	print("PASS: internal floor height rejects invalid collision paths")
+	var positive_heights := PackedByteArray()
+	positive_heights.resize(32)
+	positive_heights[18] = 8
+	var positive_rotated := PackedByteArray()
+	positive_rotated.resize(32)
+	positive_rotated[21] = 5
+	probe_bundle["heights"] = positive_heights
+	probe_bundle["rotated_heights"] = positive_rotated
+	probe_bundle["angles"] = PackedByteArray([0, 32])
+	probe_bundle["collision_primary"] = PackedByteArray([0, 1])
+	probe_bundle["collision_secondary"] = PackedByteArray([0, 1])
+	for expected in [{"word": 0x10, "path": 0}, {"word": 0x40, "path": 1}]:
+		probe_chunks[0] = expected["word"]
+		probe_chunks[1] = 1
+		probe_bundle["chunks"] = probe_chunks
+		var solid_floor := Collision.find_floor(probe_bundle, Vector2i(2, 5), expected["path"])
+		assert(solid_floor["ok"] and solid_floor["height"] == 8 and solid_floor["distance"] == 2)
+	for expected in [{"word": 0x20, "path": 0}, {"word": 0x80, "path": 1}]:
+		probe_chunks[0] = expected["word"]
+		probe_chunks[1] = 1
+		probe_bundle["chunks"] = probe_chunks
+		var solid_wall := Collision.find_right_wall(probe_bundle, Vector2i(2, 5), expected["path"])
+		assert(solid_wall["ok"] and solid_wall["height"] == 5 and solid_wall["distance"] == 8)
+	print("PASS: nonempty floor and right-wall geometry on both collision paths")
 	var wall_chunks := PackedByteArray()
 	wall_chunks.resize(256)
 	var rotated := PackedByteArray()
