@@ -31,6 +31,45 @@ func _initialize() -> void:
 	var empty := Collision._height(collision_bundle, Vector2i.ZERO, 0, 0)
 	assert(empty["ok"] and empty["height"] == 0 and empty["block_id"] == 0)
 	print("PASS: empty block preserves height zero")
+	var wall_chunks := PackedByteArray()
+	wall_chunks.resize(256)
+	var rotated := PackedByteArray()
+	rotated.resize(64)
+	rotated[21] = 16
+	rotated[37] = 5
+	rotated[53] = 9
+	var wall_bundle := {
+		"ok": true, "foreground": {"width_chunks": 2, "height_chunks": 1, "rows": [PackedByteArray([0, 1])]},
+		"chunks": wall_chunks, "collision_primary": PackedByteArray([0, 0, 2]),
+		"collision_secondary": PackedByteArray([0, 0, 3]),
+		"angles": PackedByteArray([0, 10, 40, 80]), "rotated_heights": rotated}
+	wall_chunks[14] = 0x20
+	wall_chunks[15] = 1
+	wall_chunks[128] = 0x20
+	wall_chunks[129] = 2
+	wall_bundle["chunks"] = wall_chunks
+	var seam := Collision.find_right_wall(wall_bundle, Vector2i(127, 5))
+	assert(seam["ok"] and seam["distance"] == 11 and seam["height"] == 5)
+	print("PASS: next chunk supplies right-wall contact")
+	wall_chunks[14] = 0x20
+	wall_chunks[15] = 2
+	wall_chunks[128] = 0x20
+	wall_chunks[129] = 1
+	wall_bundle["chunks"] = wall_chunks
+	wall_bundle["collision_primary"] = PackedByteArray([0, 1, 2])
+	seam = Collision.find_right_wall(wall_bundle, Vector2i(128, 5))
+	assert(seam["ok"] and seam["distance"] == -6 and seam["height"] == 5)
+	print("PASS: previous chunk supplies right-wall overlap")
+	wall_chunks[128] = 0xA0
+	wall_chunks[129] = 2
+	wall_bundle["chunks"] = wall_chunks
+	var primary := Collision.find_right_wall(wall_bundle, Vector2i(128, 5), 0)
+	var secondary := Collision.find_right_wall(wall_bundle, Vector2i(128, 5), 1)
+	assert(primary["ok"] and secondary["ok"] and primary["distance"] == 10 and secondary["distance"] == 6)
+	print("PASS: primary and secondary wall paths differ")
+	seam = Collision.find_right_wall(wall_bundle, Vector2i(255, 5))
+	assert(not seam["ok"] and seam.has("error"))
+	print("PASS: outer wall layout boundary returns structured error")
 	var stream := PackedByteArray([0x41, 0, 65, 255, 0, 0, 0])
 	assert(Decoder.decode_kosinski(stream)["data"] == PackedByteArray([65, 65, 65]))
 	for length in range(stream.size()):
