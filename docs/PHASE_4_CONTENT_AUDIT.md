@@ -1,5 +1,7 @@
 # Phase 4A — Angel Island content and fidelity audit
 
+**2026-11-22 audio fidelity backlog:** The operator queued original-ROM music and SFX identification, private cache extraction, playback, driver priority/channel arbitration, gameplay/event cues, volume/pause logic and listening/reference verification. Local `skdisasm/Sound` includes Music/SFX/DAC disassembly research, but that is not proof that the supported-ROM audio playback works. None of the audio gate is accepted on the strength of the queued cards. The owner's 5120x1440 screenshot-relative scale requirement for Sonic, trees, checkpoints and objects is likewise an open visual acceptance gate. See [Audio and screenshot-scale queue plan](PHASE_4_AUDIO_AND_SCALE_QUEUE.md).
+
 **Status: In progress, 2026-11-14.** Phase 4A began on `codex/phase-3-display`, based on `554fca9`. This is a research/implementation contract, not certification of a playable act. The working target is Angel Island Act 1, Sonic alone, fresh campaign state, in the supported combined S3&K profile. No special-stage exclusion or art/audio substitution has been approved.
 
 ## Evidence and confidence
